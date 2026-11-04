@@ -1,59 +1,124 @@
 # Research and accounting notes
 
+This document explains the mathematics and assumptions behind the single-asset backtest. Start with the [README](../README.md) for installation and command-line usage.
+
 ## Returns and risk
 
-Simple return r_t=p_t/p_(t-1)-1. Wealth compounds as V_t=V_(t-1)*(1+r_t);
-returns must not be summed to obtain a multi-period return. The equity curve
-includes initial wealth 1 so a first-period loss appears in drawdown.
-Drawdown at t is V_t/max(V_0,...,V_t)-1; maximum drawdown is the most negative
-value. It is reported as a negative fraction.
+Let `p_t` denote the adjusted closing price at observation `t`.
 
-For n observed intervals and K intervals/year, the annualised compound return is
-(V_n/V_0)^(K/n)-1. Annualised volatility is sample stdev(r)*sqrt(K). The reported
-Sharpe is mean(r)/sample_stdev(r)*sqrt(K), with zero risk-free return assumed.
-Zero sample volatility or fewer than two returns produces null Sharpe. A single
-return still permits total return and drawdown. These are descriptive statistics,
-not confidence intervals. Short-sample annualisation can be misleading.
+### Simple returns and wealth
 
-## Timing and transaction costs
+The simple return for one interval is:
 
-A target w_t computed from prices through close t is applied to t->t+1, never
-the return ending at t. Future data extension must not change earlier targets.
-The code tests this causality property and a 100% price jump that cannot be
-captured by the signal it creates. The signal-close execution assumption is
-explicitly idealised; realistic next-session fills require another price series.
+```text
+r_t = p_t / p_(t-1) - 1
+```
 
-Even a constant target fraction needs rebalancing after price movement. Before
-the next trade, a position with target w and asset return r has weight
-x=w*(1+r)/(1+w*r). Using only changes in target weights would miss that turnover.
+For wealth `V_t`, compound returns rather than summing them:
 
-Let c be proportional cost, x the current asset fraction of pretrade wealth, and
-w the desired fraction of post-cost wealth. The cost fraction f solves
-f=c*abs(w*(1-f)-x). For buys f=c*(w-x)/(1+c*w); for sells
-f=c*(x-w)/(1-c*w). Actual turnover is abs(w*(1-f)-x).
-Net interval return is (1-f)*(1+w*r)-1. This accounts for the fact that fees
-reduce the capital available for investment. For flat prices, full entry then
-exit leaves wealth (1-c)/(1+c), not exactly (1-c)^2.
+```text
+V_t = V_(t-1) * (1 + r_t),   V_0 = 1
+```
 
-Tests cover this identity, drift-aware rebalancing, zero-cost buy-and-hold
-matching the underlying price ratio, causality, data rejection, drawdown and
-reproducible CLI results. The implementation exposes the path rather than only
-a headline score so accounting can be inspected independently.
+Including initial wealth in the equity curve ensures that a loss in the first interval contributes to drawdown.
 
-## A defensible next experiment
+### Drawdown
 
-1. Select an asset/universe and economic question before looking at results.
-2. Record source, licence, adjustment convention, retrieval date, checksum,
-   trading calendar, missing observations and any selection/survivorship limits.
-3. Freeze a historical development period, validation process and final holdout.
-   The current CLI uses earlier data as warm-up only; it is not a model-fitting
-   framework. Test-start selection is explicit, not automatically optimised.
-4. Compare predeclared buy-and-hold and cash baselines, plus cost sensitivity.
-5. Report uncertainty using methods compatible with serial dependence (e.g.
-   block bootstrap), and report all tried variants to expose multiple testing.
+Drawdown is the loss relative to the highest wealth reached so far:
 
-Defer portfolios, live execution and machine-learning models until those data
-and experimental contracts are established. Standard-library loops are suitable
-for this one-asset daily baseline; there is no measured need for vectorisation
-or a distributed engine. Statistical plots and multi-asset research would justify
-carefully selected scientific dependencies later, rather than now.
+```text
+drawdown_t = V_t / max(V_0, ..., V_t) - 1
+```
+
+Maximum drawdown is the minimum of this series and is reported as a **negative fraction** (or zero if there is no drawdown).
+
+### Annualised statistics
+
+For `n` observed return intervals and `K` intervals per year:
+
+| Metric | Calculation |
+| --- | --- |
+| Annualised compound return | `(V_n / V_0)^(K/n) - 1` |
+| Annualised volatility | `sample_stdev(r) * sqrt(K)` |
+| Sharpe ratio (zero risk-free rate) | `mean(r) / sample_stdev(r) * sqrt(K)` |
+
+The Sharpe ratio is reported as JSON `null` when sample volatility is zero or fewer than two returns are available. Total return and drawdown remain meaningful with a single observed return.
+
+These are **descriptive measures, not confidence intervals**. Annualising short or dependent return samples can be misleading. The default `K=252` assumes daily trading observations; the program does not infer missing sessions or regularise timestamps.
+
+## Signal timing and look-ahead bias
+
+The momentum rule chooses a target long weight of 1 if the current adjusted close is above the close `lookback` observations earlier; otherwise it chooses 0 (cash).
+
+A target `w_t` based on prices available **through close `t`** earns the return from `t` to `t+1`. It must never earn the price change ending at `t`, because that would use future information.
+
+Tests check that adding later data does not change earlier signals and that a 100% price jump cannot be captured by the signal created by that jump.
+
+**Execution caveat:** Applying the newly computed target at the same observed close assumes that close is tradable after the signal is known. This simplifies accounting; a realistic next-session execution model requires a separate execution-price series.
+
+## Transaction costs and portfolio drift
+
+The backtest charges proportional costs on the asset value actually traded, rather than simply on changes to target weights.
+
+### Drift before rebalancing
+
+Even if the desired portfolio weight is unchanged, the asset weight drifts after a return.
+
+For previous target weight `w` and interval asset return `r`, the pretrade asset fraction is:
+
+```text
+x = w * (1 + r) / (1 + w * r)
+```
+
+Ignoring this drift would understate turnover when rebalancing fractional allocations.
+
+### Costs applied to invested capital
+
+Define:
+
+- `c`: proportional cost rate (`cost-bps / 10000`)
+- `x`: pretrade asset fraction of wealth
+- `w`: target asset fraction of wealth **after costs**
+- `f`: cost as a fraction of pretrade wealth
+
+The accounting identity is:
+
+```text
+f = c * abs(w * (1 - f) - x)
+```
+
+Solving this identity for trade direction gives:
+
+```text
+Buy:  f = c * (w - x) / (1 + c * w)
+Sell: f = c * (x - w) / (1 - c * w)
+```
+
+Actual turnover and the next net interval return are:
+
+```text
+turnover   = abs(w * (1 - f) - x)
+net_return = (1 - f) * (1 + w * r) - 1
+```
+
+This accounts for fees reducing the capital available to invest. With flat prices, fully entering and then exiting produces final wealth `(1-c)/(1+c)`, rather than exactly `(1-c)^2`.
+
+Costs represent constant proportional fees and slippage, **not** order-book execution. The model does not force liquidation on the final observation; the last signal has no observed subsequent return and is ignored.
+
+## Evaluation period and reproducibility
+
+The `--test-start` argument selects a date present in the input and requires enough earlier observations for the lookback signal. The strategy and buy-and-hold evaluation start flat over the same horizon, including relevant initial entry costs. Warm-up prices supply history only; they are not a fitted training set.
+
+The CLI returns a SHA-256 checksum for the input and records parameters in JSON so a result can be matched to its dataset and configuration. The bundled example is synthetic rather than a market sample.
+
+Tests cover causality, input rejection, drawdown, turnover after drift, fee accounting, zero-cost buy-and-hold agreement with price ratios, and reproducible CLI output. Full return and position paths permit more scrutiny than a headline Sharpe ratio alone.
+
+## Designing a defensible next experiment
+
+1. **Define the question first.** Choose an asset or universe and a hypothesis before reviewing performance.
+2. **Document the data.** Record the source, licence, adjustment rules, retrieval date, checksum, trading calendar, missing observations and selection or survivorship limitations.
+3. **Separate development and evaluation.** Freeze the development period, validation procedure and final untouched holdout. The current CLI is not a model-fitting framework.
+4. **Predeclare comparisons.** Include cash and buy-and-hold baselines and transaction-cost sensitivity, and report all tried variants.
+5. **Quantify uncertainty.** Use methods that account for serial dependence (such as an appropriate block bootstrap), rather than treating a single backtest score as a reliable estimate.
+
+Portfolios, live execution and machine-learning models are deliberately out of scope for this baseline. Standard-library loops are sufficient for its small daily single-asset workload; add scientific dependencies when a measurable research requirement justifies them.
