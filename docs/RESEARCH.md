@@ -1,6 +1,6 @@
 # Research and accounting notes
 
-This document explains the mathematics and assumptions behind the single-asset backtest. Start with the [README](../README.md) for installation and command-line usage.
+This document explains the mathematics and assumptions behind the single asset backtest. Start with the [README](../README.md) for installation and command line usage.
 
 ## Returns and risk
 
@@ -40,21 +40,21 @@ For `n` observed return intervals and `K` intervals per year:
 | --- | --- |
 | Annualised compound return | `(V_n / V_0)^(K/n) - 1` |
 | Annualised volatility | `sample_stdev(r) * sqrt(K)` |
-| Sharpe ratio (zero risk-free rate) | `mean(r) / sample_stdev(r) * sqrt(K)` |
+| Sharpe ratio (zero risk free rate) | `mean(r) / sample_stdev(r) * sqrt(K)` |
 
 The Sharpe ratio is reported as JSON `null` when sample volatility is zero or fewer than two returns are available. Total return and drawdown remain meaningful with a single observed return.
 
-These are **descriptive measures, not confidence intervals**. Annualising short or dependent return samples can be misleading. The default `K=252` assumes daily trading observations; the program does not infer missing sessions or regularise timestamps.
+These are **descriptive measures, not confidence intervals**. Annualising short or dependent return samples can be misleading. The default `K=252` assumes daily trading observations, the program does not infer missing sessions or regularise timestamps.
 
-## Signal timing and look-ahead bias
+## Signal timing and look ahead bias
 
-The momentum rule chooses a target long weight of 1 if the current adjusted close is above the close `lookback` observations earlier; otherwise it chooses 0 (cash).
+The momentum rule chooses a target long weight of 1 if the current adjusted close is above the close `lookback` observations earlier, otherwise it chooses 0 (cash).
 
 A target `w_t` based on prices available **through close `t`** earns the return from `t` to `t+1`. It must never earn the price change ending at `t`, because that would use future information.
 
 Tests check that adding later data does not change earlier signals and that a 100% price jump cannot be captured by the signal created by that jump.
 
-**Execution caveat:** Applying the newly computed target at the same observed close assumes that close is tradable after the signal is known. This simplifies accounting; a realistic next-session execution model requires a separate execution-price series.
+**Execution caveat:** Applying the newly computed target at the same observed close assumes that close is tradable after the signal is known. This simplifies accounting, a realistic next session execution model requires a separate execution price series.
 
 ## Transaction costs and portfolio drift
 
@@ -103,22 +103,22 @@ net_return = (1 - f) * (1 + w * r) - 1
 
 This accounts for fees reducing the capital available to invest. With flat prices, fully entering and then exiting produces final wealth `(1-c)/(1+c)`, rather than exactly `(1-c)^2`.
 
-Costs represent constant proportional fees and slippage, **not** order-book execution. The model does not force liquidation on the final observation; the last signal has no observed subsequent return and is ignored.
+Costs represent constant proportional fees and slippage, **not** order book execution. The model does not force liquidation on the final observation, the last signal has no observed subsequent return and is ignored.
 
 ## Evaluation period and reproducibility
 
-The `--test-start` argument selects a date present in the input and requires enough earlier observations for the lookback signal. The strategy and buy-and-hold evaluation start flat over the same horizon, including relevant initial entry costs. Warm-up prices supply history only; they are not a fitted training set.
+The `--test-start` argument selects a date present in the input and requires enough earlier observations for the lookback signal. The strategy and buy and hold evaluation start flat over the same horizon, including relevant initial entry costs. Warm up prices supply history only, they are not a fitted training set.
 
 The CLI returns a SHA-256 checksum for the input and records parameters in JSON so a result can be matched to its dataset and configuration. The bundled example is synthetic rather than a market sample.
 
-Tests cover causality, input rejection, drawdown, turnover after drift, fee accounting, zero-cost buy-and-hold agreement with price ratios, and reproducible CLI output. Full return and position paths permit more scrutiny than a headline Sharpe ratio alone.
+Tests cover causality, input rejection, drawdown, turnover after drift, fee accounting, zero cost buy and hold agreement with price ratios, and reproducible CLI output. Full return and position paths permit more scrutiny than a headline Sharpe ratio alone.
 
 ## Designing a defensible next experiment
 
-1. **Define the question first.** Choose an asset or universe and a hypothesis before reviewing performance.
-2. **Document the data.** Record the source, licence, adjustment rules, retrieval date, checksum, trading calendar, missing observations and selection or survivorship limitations.
-3. **Separate development and evaluation.** Freeze the development period, validation procedure and final untouched holdout. The current CLI is not a model-fitting framework.
-4. **Predeclare comparisons.** Include cash and buy-and-hold baselines and transaction-cost sensitivity, and report all tried variants.
-5. **Quantify uncertainty.** Use methods that account for serial dependence (such as an appropriate block bootstrap), rather than treating a single backtest score as a reliable estimate.
+1. **Define the question first.** Choose an asset or universe and a hypothesis before reviewing performance
+2. **Document the data.** Record the source, licence, adjustment rules, retrieval date, checksum, trading calendar, missing observations, and selection or survivorship limitations.
+3. **Separate development and evaluation.** Freeze the development period, validation procedure and final untouched holdout. The current CLI is not a model fitting framework
+4. **Predeclare comparisons.** Include cash and buy and hold baselines and transaction cost sensitivity, and report all tried variants
+5. **Quantify uncertainty.** Use methods that account for serial dependence (such as an appropriate block bootstrap), rather than treating a single backtest score as a reliable estimate
 
-Portfolios, live execution and machine-learning models are deliberately out of scope for this baseline. Standard-library loops are sufficient for its small daily single-asset workload; add scientific dependencies when a measurable research requirement justifies them.
+Portfolios, live execution and machine learning models are deliberately out of scope for this baseline. Standard library loops are sufficient for its small daily single asset workload, add scientific dependencies when a measurable research requirement justifies them.

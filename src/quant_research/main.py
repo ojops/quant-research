@@ -1,4 +1,4 @@
-"""Compare a fixed momentum rule and buy-and-hold on a chronological holdout."""
+"""Compare a fixed momentum rule and buy and hold on a chronological holdout"""
 
 import argparse
 import hashlib
@@ -25,6 +25,7 @@ def main(argv=None) -> int:
     parser.add_argument("--cost-bps", type=float, default=10)
     parser.add_argument("--periods-per-year", type=int, default=252)
     args = parser.parse_args(argv)
+
     try:
         series = load_prices(args.csv)
         index = series.dates.index(args.test_start)
@@ -32,6 +33,7 @@ def main(argv=None) -> int:
             raise ValueError(
                 "Holdout needs prior lookback history and at least three prices"
             )
+
         targets = momentum_weights(series.prices, args.lookback)[index:]
         prices = series.prices[index:]
         strategy = run_backtest(prices, targets, args.cost_bps)
@@ -54,11 +56,12 @@ def main(argv=None) -> int:
             "history_observations": index,
             "test_start": str(series.dates[index]),
             "test_end": str(series.dates[-1]),
-            "assumptions": "Single asset; adjusted prices; zero cash/risk-free rate; close execution; no final liquidation",
+            "assumptions": "Single asset, adjusted prices, zero cash/risk free rate, close execution, and no final liquidation",
             "strategy": report(strategy),
             "buy_and_hold": report(benchmark),
         }
         print(json.dumps(output, indent=2, allow_nan=False))
+        
         return 0
     except (OSError, ValueError, TypeError) as error:
         parser.error(str(error))
