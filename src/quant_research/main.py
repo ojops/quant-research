@@ -61,7 +61,7 @@ def main(argv=None) -> int:
             "buy_and_hold": report(benchmark),
         }
         print(json.dumps(output, indent=2, allow_nan=False))
-        
+
         return 0
     except (OSError, ValueError, TypeError) as error:
         parser.error(str(error))

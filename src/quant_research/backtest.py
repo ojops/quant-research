@@ -75,7 +75,7 @@ def run_backtest(prices, targets, cost_bps=0.0) -> BacktestResult:
         costs.append(fee)
 
         drifted = target * (1 + asset_return) / gross
-        
+
     return BacktestResult(
         tuple(returns), tuple(positions), tuple(turnover), tuple(costs)
     )

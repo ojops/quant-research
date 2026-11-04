@@ -2,6 +2,14 @@
 
 A Python 3.10 project for reproducible single-asset return analysis and cost-aware backtesting. It provides a small, testable research foundation rather than a complete trading platform or a validated profitable strategy.
 
+[![Synthetic momentum and buy-and-hold equity curves from the actual backtester](docs/media/preview.gif)](docs/media/demo.mp4?raw=1)
+
+**[Watch the full demonstration — 38 seconds, 1080p](docs/media/demo.mp4?raw=1).**
+Follow signal timing, cost-aware compounding, and fixed parameter sensitivities
+through the real CLI. Every result uses the bundled **synthetic** price series;
+these are descriptive calculations, not evidence of investment performance.
+[Recorded results](docs/media/demo-data.json) · [Regenerate the video](docs/DEMO.md).
+
 ## Overview
 
 The project loads an explicitly supplied price series, calculates returns and risk statistics, and compares a fixed momentum rule with buy-and-hold over a chronological evaluation period. It makes signal timing and transaction costs visible so that results can be inspected and reproduced.

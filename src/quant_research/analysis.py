@@ -64,7 +64,7 @@ def performance(returns, periods_per_year=252) -> dict:
 
     if not isfinite(annual_return):
         raise ValueError("Annualised return is not finite")
-        
+
     return {
         "observations": len(returns),
         "total_return": curve[-1] - 1,
