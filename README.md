@@ -1,58 +1,134 @@
 # Quantitative Research
 
-A small Python 3.10 research foundation for validated single-asset prices,
-financial returns, risk metrics and cost-aware backtests. It uses only the
-standard library at runtime. This replaces an empty scaffold; it is not a mature
-research platform or evidence of a profitable trading strategy.
+A Python 3.10 project for reproducible single-asset return analysis and cost-aware backtesting. It provides a small, testable research foundation rather than a complete trading platform or a validated profitable strategy.
+
+## Overview
+
+The project loads an explicitly supplied price series, calculates returns and risk statistics, and compares a fixed momentum rule with buy-and-hold over a chronological evaluation period. It makes signal timing and transaction costs visible so that results can be inspected and reproduced.
+
+## Features
+
+- Validation of dated, adjusted closing prices from CSV
+- Simple returns, compounded performance, volatility, Sharpe ratio and drawdown
+- A fixed trailing-price momentum signal with no automatic parameter fitting
+- Long-only, cash-or-asset backtests with proportional transaction costs
+- Chronological holdout evaluation and buy-and-hold comparison
+- JSON output including settings, input SHA-256, returns, positions, turnover and costs
+- Synthetic example data and automated tests
+
+The current implementation supports **one asset** and an idealised close-to-close execution model. It does not retrieve prices, optimise strategies, trade live or establish statistical significance.
+
+## Requirements
+
+- Python 3.10
+- [uv](https://docs.astral.sh/uv/)
+
+The instructions below assume Ubuntu or WSL running Ubuntu. Runtime calculations use the Python standard library.
+
+## Installation
+
+Clone the repository and install the locked dependencies:
 
 ```bash
+git clone https://github.com/ojops/quant-research.git
+cd quant-research
 uv sync --locked
-uv run pytest
+```
+
+## Usage
+
+Run the bundled synthetic example from the repository root:
+
+```bash
 uv run quant-research examples/synthetic_prices.csv --test-start 2024-02-01
+```
+
+Adjust the lookback and transaction-cost assumptions:
+
+```bash
+uv run quant-research examples/synthetic_prices.csv --test-start 2024-02-01 --lookback 5 --cost-bps 10
+```
+
+Alternatively, run the package as a module:
+
+```bash
 uv run python -m quant_research examples/synthetic_prices.csv --test-start 2024-02-01 --lookback 5 --cost-bps 10
 ```
 
-The CSV requires `date` (ISO YYYY-MM-DD) and `adjusted_close` (finite positive
-number), strictly increasing dates and no duplicates. Data are never downloaded,
-sorted, forward-filled or adjusted automatically. The caller is responsible for
-correct split/dividend adjustment and consistent observation spacing.
+Use `uv run quant-research --help` to see the available arguments.
 
-## Research experiment
+### Input data
 
-A fixed trailing-price momentum rule is long when price(t)>price(t-lookback),
-and otherwise holds cash. Signals use information available through t and earn
-only the following interval's return. The holdout starts at `--test-start`, which
-must occur in the data and have enough prior warm-up history. Both the strategy
-and buy-and-hold start flat and pay initial entry costs on this same horizon.
-Prior observations supply signal history; no parameters are fitted automatically.
+CSV input must contain these columns:
 
-JSON output includes the input SHA-256, settings, evaluation dates, net returns,
-positions, turnover, costs, total/annualised returns, sample volatility,
-zero-risk-free Sharpe and maximum drawdown. The bundled 60-observation example
-is synthetic: p_i=100*exp(0.0005*i+0.03*sin(i/3)), rounded to eight decimals, on
-weekdays starting 2024-01-01. It is a reproducible functional fixture, not market
-data or a strategy evaluation. No paid services or API credentials are required.
+| Column | Meaning |
+| --- | --- |
+| `date` | Observation date in ISO `YYYY-MM-DD` format |
+| `adjusted_close` | Finite, strictly positive adjusted closing price |
+
+Dates must be strictly increasing and unique. The program does **not** download, reorder, forward-fill or adjust data. You are responsible for split/dividend adjustments and a consistent observation frequency.
+
+The bundled `examples/synthetic_prices.csv` contains 60 weekday observations starting on 2024-01-01, generated from a deterministic mathematical price function. It tests functionality; it is **not real market data** or evidence of trading performance. No API keys or paid data services are needed.
+
+### Output
+
+The command prints JSON containing the input checksum, run configuration, evaluation dates, net returns and positions, turnover and costs, plus total and annualised return, sample volatility, zero-risk-free Sharpe ratio, and maximum drawdown. An undefined Sharpe ratio is represented as `null`.
+
+## Research methodology
+
+The example momentum rule targets a full long position when the latest price exceeds the price `lookback` observations earlier; otherwise it targets cash. A signal calculated at observation `t` affects only the **following** return interval, not the interval used to generate it.
+
+The `--test-start` date must exist in the data and follow sufficient warm-up observations. The strategy and buy-and-hold comparison use the same evaluation horizon and both pay applicable initial entry costs. Earlier observations provide signal history; no parameters are trained automatically.
+
+Transaction costs are based on actual value traded, including weight drift between observations. The model assumes fills at the observed signal close, which is an **idealised execution assumption**.
+
+For formulas, turnover and fee accounting, see [research and accounting notes](docs/RESEARCH.md).
 
 ## Assumptions and limitations
 
-- One asset, long-only weights in [0,1], zero-return cash, no leverage or shorts.
-- Close-to-close accounting assumes execution at the observed signal close;
-  this is an idealised fill assumption, not proof the close was achievable after
-  signal calculation. A next-open execution model needs different input data.
-- `cost-bps` is a constant proportional fee/slippage model, not an order book.
-  It applies to actual asset value traded, including entry and weight drift.
-  There is no forced final liquidation. The final signal has no observed future
-  return and is ignored.
-- Annualisation assumes the specified observation frequency (default 252/year).
-  Missing sessions and irregular timestamps are not inferred. Inspect them first.
-- Sharpe uses sample volatility, a zero risk-free rate, and square-root-of-time
-  scaling. Autocorrelation and non-stationarity can invalidate its interpretation.
-  Undefined Sharpe is JSON null, not infinity.
-- A chronological holdout alone cannot prevent manual tuning on test results,
-  survivorship bias in source selection or errors in adjusted data. Do not select
-  parameters after inspecting this holdout and then call it out-of-sample evidence.
+- **Asset exposure:** A single asset, long-only weights between 0 and 1, cash with zero return, and no leverage or short selling.
+- **Execution:** Close-based fills are idealised. Realistic next-session execution needs additional data and modelling.
+- **Costs:** `--cost-bps` represents constant proportional fees/slippage, not market depth or an order book. No final liquidation is forced.
+- **Sampling:** Annualisation uses the supplied observation frequency (252 per year by default). Missing sessions or irregular dates are not corrected automatically.
+- **Statistics:** Sharpe assumes zero risk-free return and uses sample volatility. Serial dependence and short samples limit interpretation.
+- **Research validity:** A chronological holdout does not eliminate selection bias, survivorship bias, data errors or multiple testing. Tuning after inspecting holdout results invalidates a claim of untouched out-of-sample performance.
 
-See [mathematical and accounting notes](docs/RESEARCH.md) and
-[coding standard](docs/STYLE.md). Next: source and snapshot a real dataset, compare
-fixed baselines across predeclared periods and assess statistical uncertainty.
-MIT licensed; see [LICENSE](LICENSE).
+## Development roadmap
+
+- **Data provenance:** Record real-data sources, licences, adjustments, retrieval dates and immutable snapshots.
+- **Experimental design:** Predeclare research questions, development periods and untouched holdouts.
+- **Baselines:** Compare cash and buy-and-hold results across fixed periods and transaction-cost assumptions.
+- **Statistical evaluation:** Estimate uncertainty and document all tested variations before making performance claims.
+- **Extensions:** Consider plots, multiple assets and more realistic execution only after the baseline is reliable.
+
+## Project structure
+
+| Path | Purpose |
+| --- | --- |
+| `src/quant_research/data.py` | Input loading and price validation |
+| `src/quant_research/analysis.py` | Return and risk calculations |
+| `src/quant_research/backtest.py` | Trading signals and cost-aware backtesting |
+| `src/quant_research/main.py` | Command-line interface and JSON output |
+| `src/quant_research/__main__.py` | Supports `python -m quant_research` |
+| `examples/synthetic_prices.csv` | Deterministic example input |
+| `docs/RESEARCH.md` | Mathematics, assumptions and research guidance |
+| `docs/STYLE.md` | Coding conventions |
+| `tests/` | Automated behavioural and regression tests |
+| `.github/workflows/checks.yml` | Automated checks |
+| `pyproject.toml` / `uv.lock` | Project configuration and locked dependencies |
+
+## Development
+
+Run the automated checks:
+
+```bash
+uv run pytest
+uv run ruff check .
+uv run ruff format --check .
+```
+
+Run `uv run ruff format .` to apply formatting. When dependencies change, commit both `pyproject.toml` and `uv.lock`. See [coding conventions](docs/STYLE.md).
+
+## License
+
+MIT licensed. See [LICENSE](LICENSE).
