@@ -2,13 +2,15 @@
 
 A Python 3.10 project for reproducible single-asset return analysis and cost-aware backtesting. It provides a small, testable research foundation rather than a complete trading platform or a validated profitable strategy.
 
-[![Synthetic momentum and buy-and-hold equity curves from the actual backtester](docs/media/preview.gif)](docs/media/demo.mp4?raw=1)
+[![Synthetic momentum and buy-and-hold equity curves from the actual backtester](docs/media/demo.gif)](https://raw.githubusercontent.com/ojops/quant-research/04655a037b8421d7d7e9f633b05b149262a29da3/docs/media/demo.mp4)
 
-**[Watch the full demonstration — 38 seconds, 1080p](docs/media/demo.mp4?raw=1).**
+**[Open or download the full MP4 — 38 seconds, 1080p](https://raw.githubusercontent.com/ojops/quant-research/04655a037b8421d7d7e9f633b05b149262a29da3/docs/media/demo.mp4).**
 Follow signal timing, cost-aware compounding, and fixed parameter sensitivities
 through the real CLI. Every result uses the bundled **synthetic** price series;
 these are descriptive calculations, not evidence of investment performance.
 [Recorded results](docs/media/demo-data.json) · [Regenerate the video](docs/DEMO.md).
+
+The animation above plays the complete demonstration. Click it to open or download the 1080p MP4.
 
 ## Overview
 

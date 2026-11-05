@@ -304,7 +304,7 @@ def main():
             frame(t, data).save(args.output_dir / f"frame-{t}.png")
         return
     encode(lambda t: frame(t, data), args.output_dir / "demo.mp4", DURATION)
-    preview(args.output_dir / "demo.mp4", args.output_dir / "preview.gif", 18, 8)
+    preview(args.output_dir / "demo.mp4", args.output_dir / "demo.gif", 0, DURATION)
 
 
 if __name__ == "__main__":
