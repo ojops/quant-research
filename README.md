@@ -1,24 +1,25 @@
 # Quantitative Research
 
-A Python 3.10 project for reproducible single-asset return analysis and cost-aware backtesting. A research baseline, **not** a validated profitable strategy or live trading system.
+Reproducible single-asset return analysis and cost-aware backtesting in Python 3.10. This is a research baseline, **not** a validated profitable strategy or live trading system.
 
-[![Eight-second looping preview of synthetic prices and positions](docs/media/preview.gif)](https://raw.githubusercontent.com/ojops/quant-research/04655a037b8421d7d7e9f633b05b149262a29da3/docs/media/demo.mp4)
+[![Eight-second preview of the synthetic backtest](docs/media/preview.gif)](https://raw.githubusercontent.com/ojops/quant-research/04655a037b8421d7d7e9f633b05b149262a29da3/docs/media/demo.mp4)
 
-*Eight-second preview using synthetic prices. [Watch the full 38-second backtest demonstration (MP4)](https://raw.githubusercontent.com/ojops/quant-research/04655a037b8421d7d7e9f633b05b149262a29da3/docs/media/demo.mp4) · [Reproduce the demonstration](docs/DEMO.md).*
+*Preview: a backtest on synthetic prices. [Watch the full 38-second demonstration (MP4)](https://raw.githubusercontent.com/ojops/quant-research/04655a037b8421d7d7e9f633b05b149262a29da3/docs/media/demo.mp4) · [How the video is made](docs/DEMO.md).*
 
 ## Features
 
-- Validated, dated adjusted-close prices from CSV
-- Returns, compounded equity, volatility, Sharpe ratio and maximum drawdown
-- Fixed lookback-momentum signals and long-or-cash backtesting
-- Proportional trading costs, turnover and buy-and-hold comparison
-- Chronological evaluation with JSON results, input checksums and automated tests
+- Validate dated adjusted-close prices from CSV
+- Calculate returns, equity, volatility, Sharpe ratio and maximum drawdown
+- Backtest a fixed momentum rule with long-or-cash positions
+- Account for proportional trading costs, turnover and weight drift
+- Compare with buy-and-hold over the same chronological evaluation period
+- Export results, return paths, parameters and data checksums as JSON
 
-The example uses **one asset**, idealised close-based fills and a fixed rule; no parameter fitting or real-market performance is claimed.
+The implementation covers **one asset** with idealised close-based execution. It does not download data, fit parameters or trade live.
 
-## Requirements and installation
+## Install
 
-Python 3.10 and [uv](https://docs.astral.sh/uv/); commands below target Ubuntu/WSL. Core calculations use the standard library.
+Requires Python 3.10 and [uv](https://docs.astral.sh/uv/). These commands target Ubuntu or WSL. Core calculations use only the Python standard library.
 
 ```bash
 git clone https://github.com/ojops/quant-research.git
@@ -26,35 +27,28 @@ cd quant-research
 uv sync --locked
 ```
 
-## Usage
+## Run
 
-Run the included deterministic **synthetic** price example:
+The bundled prices are **synthetic** and are intended to test the implementation, not demonstrate investment performance.
 
 ```bash
 uv run quant-research examples/synthetic_prices.csv --test-start 2024-02-01
 uv run quant-research examples/synthetic_prices.csv --test-start 2024-02-01 --lookback 5 --cost-bps 10
 ```
 
-Input CSV files require strictly increasing, unique `date` values (`YYYY-MM-DD`) and finite positive `adjusted_close` prices. Data is not downloaded or adjusted automatically.
+CSV input requires strictly increasing, unique `date` values (`YYYY-MM-DD`) and positive finite `adjusted_close` values. The CLI does not download, adjust or fill missing prices.
 
-Output is JSON containing the strategy and buy-and-hold paths, metrics, settings and source-file SHA-256. See `uv run quant-research --help` for options.
+Output JSON includes strategy and benchmark paths, performance metrics, settings and an input SHA-256 checksum. Run `uv run quant-research --help` for options.
 
-## Methodology and limitations
+## Method and limitations
 
-At close `t`, the momentum rule compares the current price with the price `lookback` observations earlier. The resulting position applies **only to the next return interval**; it does not earn the price move that produced the signal.
+The signal compares the current price with its price `lookback` observations earlier. A signal calculated using the close at time `t` applies to the **following** return interval, not the interval that produced it.
 
-The model includes proportional trading costs and weight drift, but assumes idealised close fills, zero cash and risk-free returns and no forced final liquidation. A short chronological holdout does not remove selection bias or establish statistical significance. See [research notes](docs/RESEARCH.md) for the accounting and limitations.
+The model charges proportional trading costs but assumes execution at the observed signal close, a zero-return cash position, a zero risk-free rate for Sharpe, and no forced final liquidation. A chronological evaluation period alone does not establish statistical significance. See [research and accounting notes](docs/RESEARCH.md).
 
-## Project structure
+## Next steps
 
-- `src/quant_research/data.py` — input validation
-- `analysis.py` and `backtest.py` — performance metrics, signals and trading simulation
-- `main.py` — CLI and JSON reporting
-- `examples/`, `tests/` and `docs/` — synthetic data, checks and methodology
-
-## Roadmap
-
-Add provenance-controlled real data, predeclared experiments, stronger statistical evaluation and more realistic execution assumptions.
+Use provenance-controlled market data, predeclare experiments, quantify statistical uncertainty and introduce more realistic execution assumptions.
 
 ## Development
 
@@ -64,4 +58,4 @@ uv run ruff check .
 uv run ruff format --check .
 ```
 
-GitHub Actions runs automated checks. See [coding conventions](docs/STYLE.md). Licensed under [MIT](LICENSE).
+GitHub Actions runs automated checks. See [coding conventions](docs/STYLE.md). [MIT licensed](LICENSE).
