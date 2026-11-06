@@ -1,9 +1,8 @@
 # Reproducing the portfolio demonstration
 
 `media/demo.mp4` is a 38-second silent film, 1920 × 1080 at 30 FPS,
-encoded as H.264/yuv420p with fast-start metadata. `media/demo.gif` shows
-the entire 38-second film at its original pace, at 768 × 432 and 10 FPS,
-looping directly in the README. There is no shortened excerpt.
+encoded as H.264/yuv420p with fast-start metadata. `media/preview.gif` loops the opening eight seconds at 768 × 432 and 10 FPS.
+The linked MP4 contains the complete film.
 
 Both media files are tracked in Git. The animation uses a relative link;
 the MP4 link uses a raw GitHub URL pinned to its media commit to avoid
@@ -85,7 +84,7 @@ uv run --locked pytest
 uv run --locked ruff check .
 uv run --locked ruff format --check .
 ffmpeg -v error -i docs/media/demo.mp4 -f null -
-ffmpeg -v error -i docs/media/demo.gif -f null -
+ffmpeg -v error -i docs/media/preview.gif -f null -
 ```
 
 The completed run passed 24 tests, Ruff lint and formatting. Recording tests
