@@ -1,4 +1,4 @@
-"""A transparent close to close, long only, single asset research baseline"""
+"""Cost-aware, close-to-close backtesting for one long-only asset."""
 
 from dataclasses import dataclass
 from math import isfinite
@@ -16,7 +16,7 @@ class BacktestResult:
 
 
 def momentum_weights(prices, lookback=5) -> tuple[float, ...]:
-    """At close t, use only prices through t, warm up remains in cash"""
+    """Set momentum targets using prices available through each close."""
     validate_prices(prices)
     if type(lookback) is not int or lookback < 1:
         raise ValueError("lookback must be a positive integer")
@@ -28,11 +28,10 @@ def momentum_weights(prices, lookback=5) -> tuple[float, ...]:
 
 
 def run_backtest(prices, targets, cost_bps=0.0) -> BacktestResult:
-    """
-    Target at close t earns the return from t to t+1, after entry costs
-    Targets are fractions of post cost equity
-    Cash earns zero
-    Fees include a constant proportional slippage assumption, no final forced liquidation
+    """Backtest next-interval positions using post-cost target weights.
+
+    Cash earns zero. Trading costs use a constant proportional rate; no final
+    liquidation is forced.
     """
     asset_returns = simple_returns(prices)
     targets = tuple(targets)
