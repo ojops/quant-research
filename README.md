@@ -92,6 +92,8 @@ uv run ruff check .
 uv run ruff format --check .
 ```
 
-Dependencies are managed with `uv`; when changing them, commit both `pyproject.toml` and `uv.lock`. GitHub Actions runs automated checks. See [coding conventions](docs/STYLE.md). ## License
+Dependencies are managed with `uv`; when changing them, commit both `pyproject.toml` and `uv.lock`. GitHub Actions runs automated checks. See [coding conventions](docs/STYLE.md).
+
+## License
 
 [MIT licensed](LICENSE).
