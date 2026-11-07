@@ -46,9 +46,13 @@ The signal compares the current price with its price `lookback` observations ear
 
 The model charges proportional trading costs but assumes execution at the observed signal close, a zero-return cash position, a zero risk-free rate for Sharpe, and no forced final liquidation. A chronological evaluation period alone does not establish statistical significance. See [research and accounting notes](docs/RESEARCH.md).
 
-## Next steps
+## Planned roadmap
 
-Use provenance-controlled market data, predeclare experiments, quantify statistical uncertainty and introduce more realistic execution assumptions.
+- **Use traceable real market data:** document sources, licences, price adjustments, missing observations, retrieval dates and checksums.
+- **Predeclare a research hypothesis:** fix the instrument, signal, benchmark, transaction-cost assumptions and evaluation criteria before testing; separate development and tuning from an untouched holdout.
+- **Run a reproducible out-of-sample experiment:** compare the strategy with buy-and-hold and cash over the same period, without treating synthetic demonstrations as evidence of profitability.
+- **Assess uncertainty and execution realism:** test parameter and cost sensitivity, account for multiple comparisons and time-series dependence, and replace idealised same-close fills with an explicit executable timing model.
+- **Generalise visualisations only when needed:** derive chart dates, axes and parameter labels from analysis outputs rather than the fixed synthetic example.
 
 ## Development
 
