@@ -54,7 +54,7 @@ def load_prices(path: Path) -> PriceSeries:
             fields
         ):
             raise ValueError("CSV needs unique date and adjusted_close columns")
-            
+
         for row_number, row in enumerate(reader, 2):
             try:
                 if None in row or any(value is None for value in row.values()):

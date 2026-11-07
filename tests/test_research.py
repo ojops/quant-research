@@ -121,5 +121,5 @@ def test_price_series_does_not_alias_mutable_input():
     prices = [100, 101]
     series = PriceSeries([date(2024, 1, 1), date(2024, 1, 2)], prices)
     prices[0] = -1
-    
+
     assert series.prices == (100, 101)
