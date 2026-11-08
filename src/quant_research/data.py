@@ -1,6 +1,7 @@
 """Validated local single asset price observations, no network access or filling"""
 
 import csv
+import io
 from dataclasses import dataclass
 from datetime import date
 from math import isfinite
@@ -44,9 +45,14 @@ def validate_prices(prices) -> None:
 
 def load_prices(path: Path) -> PriceSeries:
     """Read ISO dates and adjusted_close, require consistent adjustment upstream"""
+    return parse_prices(path.read_text(encoding="utf-8"))
+
+
+def parse_prices(text: str) -> PriceSeries:
+    """Parse a captured CSV snapshot, so its checksum identifies parsed bytes."""
     dates, prices = [], []
 
-    with path.open(newline="", encoding="utf-8") as handle:
+    with io.StringIO(text, newline="") as handle:
         reader = csv.DictReader(handle)
         fields = reader.fieldnames or []
 
