@@ -34,6 +34,15 @@ For `n` observed intervals and `K` intervals per year:
 
 Sharpe is `null` when there are fewer than two returns or sample volatility is zero. Annualised volatility is also `null` with fewer than two observations. The default `K=252` assumes trading-day intervals; the program neither infers the calendar frequency nor fills missing sessions. These are **descriptive metrics**, not uncertainty estimates.
 
+Calculations use binary floating point. Before reporting an asset or post-cost
+return, the model checks that converting its positive growth factor to `r` and
+back to `1 + r` preserves that factor within `1e-10` relative error (zero absolute
+tolerance). Extreme losses that fail this check are rejected: otherwise a price
+round trip such as `1 → 1e-16 → 1` can manufacture a gain through cancellation.
+This is a per-interval representation check, not a bound on cumulative error.
+Positive equity that underflows to zero is also rejected; an explicitly supplied
+return of -1 still represents a genuine total loss in the statistics API.
+
 ## Signal timing
 
 The fixed momentum rule targets weight 1 (fully invested) when the current adjusted close exceeds the price `lookback` observations earlier. Otherwise it targets weight 0 (cash).

@@ -169,3 +169,15 @@ def test_experiment_cli_is_machine_readable_and_reproducible(capsys):
     assert (
         json.loads(first)["configuration"]["data"]["provenance"]["kind"] == "synthetic"
     )
+
+
+def test_out_of_range_integer_cost_is_a_cli_error(tmp_path, capsys):
+    path, config = copy_experiment(tmp_path)
+    config["parameters"]["cost_bps"] = [10**400]
+    path.write_text(json.dumps(config))
+    with pytest.raises(SystemExit) as error:
+        main(["--experiment", str(path)])
+    assert error.value.code == 2
+    output = capsys.readouterr()
+    assert not output.out
+    assert "cost_bps must be finite and in [0, 10000)" in output.err

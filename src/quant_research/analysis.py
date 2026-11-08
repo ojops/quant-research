@@ -1,18 +1,33 @@
 """Return and risk calculations with explicit observation frequency assumptions"""
 
-from math import isfinite, sqrt
+from math import isclose, isfinite, sqrt
 from statistics import mean, stdev
 
 from quant_research.data import validate_prices
 
 
+def return_from_growth(growth: float) -> float:
+    """Convert positive growth only if compounding can reconstruct it accurately.
+
+    Near a total loss, subtracting one can destroy meaningful relative precision.
+    Check the growth factor, not the return's proximity to -1; absolute tolerance
+    would incorrectly accept a small positive factor rounded to zero.
+    """
+    value = growth - 1
+    if (
+        not isfinite(growth)
+        or growth <= 0
+        or not isclose(1 + value, growth, rel_tol=1e-10, abs_tol=0)
+    ):
+        raise ValueError(
+            "Growth factor exceeds supported floating-point range or precision"
+        )
+    return value
+
+
 def simple_returns(prices) -> tuple[float, ...]:
     validate_prices(prices)
-    values = tuple(b / a - 1 for a, b in zip(prices, prices[1:]))
-
-    if any(not isfinite(r) or r <= -1 for r in values):
-        raise ValueError("Price ratios are outside the supported floating-point range")
-    return values
+    return tuple(return_from_growth(b / a) for a, b in zip(prices, prices[1:]))
 
 
 def equity_curve(returns) -> tuple[float, ...]:
@@ -32,6 +47,8 @@ def equity_curve(returns) -> tuple[float, ...]:
 
         if not isfinite(wealth):
             raise ValueError("Equity overflow")
+        if wealth == 0 and values[-1] > 0 and value > -1:
+            raise ValueError("Positive equity underflow")
         values.append(wealth)
 
     return tuple(values)
