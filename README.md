@@ -8,7 +8,7 @@ A Python project for reproducible single-asset return analysis and cost-aware ba
 
 ## Overview
 
-This project provides an inspectable starting point for investigating trading rules: validate a price series, form a momentum signal, simulate a long-or-cash strategy with trading costs, and compare its results with buy-and-hold. Each run records settings and an input checksum to support reproducibility.
+This project provides an inspectable starting point for investigating trading rules: validate a price series, form a momentum signal, simulate a long-or-cash strategy with trading costs, and compare its results with buy-and-hold and cash. A checksum-pinned experiment can declare its hypothesis, data provenance, evaluation period and complete parameter/cost comparisons before running.
 
 The bundled example uses **synthetic prices** to demonstrate the implementation, not to establish investment performance. Independent real-data evaluation and statistical validation are future development priorities.
 
@@ -18,8 +18,11 @@ The bundled example uses **synthetic prices** to demonstrate the implementation,
 - Calculate returns, equity, volatility, Sharpe ratio and maximum drawdown
 - Backtest a fixed momentum rule with long-or-cash positions
 - Account for proportional trading costs, turnover and weight drift
-- Compare with buy-and-hold over the same chronological evaluation period
-- Export results, return paths, parameters and data checksums as JSON
+- Compare momentum, buy-and-hold and cash over identical, explicitly bounded periods
+- Reproduce JSON experiments with input, configuration and implementation checksums
+- Report every declared lookback/cost variation without automatic selection
+- Choose idealised signal-close or delayed next-close execution
+- Export results, dated return paths, parameters and comparisons as JSON
 
 The implementation covers **one asset** with idealised close-based execution. It does not download data, fit parameters or trade live.
 
@@ -44,13 +47,29 @@ uv run quant-research examples/synthetic_prices.csv --test-start 2024-02-01 --lo
 
 CSV input requires strictly increasing, unique `date` values (`YYYY-MM-DD`) and positive finite `adjusted_close` values. The CLI does not download, adjust or fill missing prices.
 
-Output JSON includes strategy and benchmark paths, performance metrics, settings and an input SHA-256 checksum. Run `uv run quant-research --help` for options.
+Reproduce the bundled **development** experiment (nine fixed settings, each compared with buy-and-hold and cash):
+
+```bash
+uv run quant-research --experiment examples/synthetic_experiment.json
+```
+
+Paths in the experiment are relative to its JSON file. A changed input checksum is rejected, and CLI parameter overrides cannot silently alter the declaration. The example uses an additional one-observation execution delay and remains synthetic.
+
+For a single run with a fixed endpoint and delayed execution:
+
+```bash
+uv run quant-research examples/synthetic_prices.csv --test-start 2024-02-01 --test-end 2024-03-22 --execution-lag 1
+```
+
+Output JSON includes strategy, cash and buy-and-hold paths, valuation and signal dates, performance metrics, settings and an input SHA-256 checksum. Experiment reports also retain the full configuration, source hashes and a flat comparison table. Run `uv run quant-research --help` for options.
 
 ## Research Method and Limitations
 
 The signal compares the current price with its price `lookback` observations earlier. A signal calculated using the close at time `t` applies to the **following** return interval, not the interval that produced it.
 
-The model charges proportional trading costs but assumes execution at the observed signal close, a zero-return cash position, a zero risk-free rate for Sharpe, and no forced final liquidation. A chronological evaluation period alone does not establish statistical significance. See [research and accounting notes](docs/RESEARCH.md).
+The original CLI defaults remain idealised signal-close execution (`--execution-lag 0`). With lag 1, a signal observed at close `t` fills at close `t+1` and first earns the `t+1` to `t+2` return. Adjusted closing prices still approximate fills; this is not a validated execution model. All models start in cash, pay applicable proportional costs and use zero cash/risk-free return with no forced final liquidation.
+
+Experiment roles distinguish development grids from a declared holdout with one fixed setting. The declaration cannot prove the data were untouched. A chronological evaluation period alone does not establish statistical significance. See [research and accounting notes](docs/RESEARCH.md).
 
 ## Development Roadmap
 
@@ -58,29 +77,31 @@ The priority is to progress from a reproducible synthetic backtest to defensible
 
 ### Planned
 
-- **Use traceable real market data:** document sources, licences, price adjustments, missing observations, retrieval dates and checksums.
-- **Predeclare a research hypothesis:** fix the instrument, signal, benchmark, transaction-cost assumptions and evaluation criteria before testing; separate development and tuning from an untouched holdout.
-- **Run a reproducible out-of-sample experiment:** compare the strategy with buy-and-hold and cash over the same period, without treating synthetic demonstrations as evidence of profitability.
-- **Assess uncertainty and execution realism:** test parameter and cost sensitivity, account for multiple comparisons and time-series dependence, and replace idealised same-close fills with an explicit executable timing model.
-- **Generalise visualisations only when needed:** derive chart dates, axes and parameter labels from analysis outputs rather than the fixed synthetic example.
+- **Use traceable real market data:** populate the implemented provenance manifest with independently checked sources, licences, adjustments and immutable snapshots; audit missing observations and selection bias.
+- **Conduct a genuinely untouched evaluation:** preregister a substantive hypothesis and one fixed setting, retain development comparisons, then evaluate new data once. Configuration support is implemented; empirical validation is not.
+- **Assess uncertainty:** add methods suited to dependent returns and multiple comparisons before interpreting sensitivity tables as evidence.
+- **Validate execution and visuals:** test next-close assumptions against executable prices and order timing; generalise chart dates and labels when moving beyond the fixed synthetic film.
 
 ## Project Structure
 
 ```text
 quant-research/
 ├── examples/
-│   └── synthetic_prices.csv # Deterministic example price data
+│   ├── synthetic_prices.csv       # Deterministic example price data
+│   └── synthetic_experiment.json  # Declared development sensitivity grid
 ├── src/quant_research/
-│   ├── data.py              # CSV loading and validation
-│   ├── analysis.py          # Returns and risk statistics
-│   ├── backtest.py          # Signals and cost-aware backtesting
-│   └── main.py              # CLI and JSON reporting
-├── scripts/                # Portfolio video rendering
-├── tests/                  # Research and demonstration tests
-├── docs/                   # Research and demo documentation
-│   └── media/              # Preview GIF, MP4 and recorded data
-├── pyproject.toml          # Project metadata and dependencies
-├── uv.lock                 # Locked dependencies
+│   ├── data.py                    # CSV loading and validation
+│   ├── analysis.py                # Returns and risk statistics
+│   ├── backtest.py                # Signals and cost-aware backtesting
+│   ├── evaluation.py              # Common horizons, timing and cash baseline
+│   ├── experiment.py              # Configuration, provenance and comparisons
+│   └── main.py                    # CLI and JSON reporting
+├── scripts/                       # Portfolio video rendering
+├── tests/                         # Research and demonstration tests
+├── docs/                          # Research and demo documentation
+│   └── media/                     # Preview GIF, MP4 and recorded data
+├── pyproject.toml                 # Project metadata and dependencies
+├── uv.lock                        # Locked dependencies
 └── README.md
 ```
 

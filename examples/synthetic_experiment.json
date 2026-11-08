@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "name": "Synthetic accounting and sensitivity demonstration",
+  "hypothesis": "Inspect how fixed momentum lookbacks and proportional costs affect an identical development horizon; no investment-performance claim.",
+  "data": {
+    "path": "synthetic_prices.csv",
+    "sha256": "5403c64a3c1eb279436a01675b2b3ddd04ff128ffb8e4db1bf1a48df6ae754b4",
+    "provenance": {
+      "kind": "synthetic",
+      "source": "Bundled deterministic mathematical price function; 60 weekday observations",
+      "licence": "Repository MIT licence; no external market data",
+      "adjustments": "Synthetic adjusted-close field; no corporate actions",
+      "retrieved_at": "Not applicable: generated example committed to this repository",
+      "limitations": "Artificial smooth path, selected demonstration period, no empirical evidence"
+    }
+  },
+  "evaluation": {
+    "start": "2024-02-01",
+    "end": "2024-03-22",
+    "role": "development"
+  },
+  "parameters": {
+    "lookbacks": [
+      3,
+      5,
+      10
+    ],
+    "cost_bps": [
+      0,
+      10,
+      50
+    ],
+    "periods_per_year": 252,
+    "execution_lag": 1
+  }
+}

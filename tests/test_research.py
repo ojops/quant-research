@@ -85,7 +85,14 @@ def test_rebalancing_accounts_for_drift_in_asset_weight():
 
 
 @pytest.mark.parametrize(
-    "weights,cost", [([0, 2], 0), ([0, float("nan")], 0), ([0, 1], -1), ([0, 1], 10000)]
+    "weights,cost",
+    [
+        ([0, 2], 0),
+        ([0, 10**400], 0),
+        ([0, float("nan")], 0),
+        ([0, 1], -1),
+        ([0, 1], 10000),
+    ],
 )
 def test_invalid_backtest_parameters(weights, cost):
     with pytest.raises(ValueError):
@@ -123,3 +130,24 @@ def test_price_series_does_not_alias_mutable_input():
     prices[0] = -1
 
     assert series.prices == (100, 101)
+
+
+def test_price_round_trip_rejects_lossy_simple_return_representation():
+    # These positive prices return to their starting value, but subtracting one
+    # from the tiny middle ratio previously manufactured an 11% compounded gain.
+    with pytest.raises(ValueError, match="precision"):
+        simple_returns([1.0, 1e-16, 1.0])
+
+
+def test_post_cost_growth_is_checked_for_precision_loss():
+    # The asset ratio itself is representable within tolerance; applying the
+    # entry fee makes the net growth too small to reconstruct accurately.
+    simple_returns([1.0, 2e-7])
+    with pytest.raises(ValueError, match="precision"):
+        run_backtest([1.0, 2e-7], [1.0, 1.0], cost_bps=5000)
+
+
+def test_positive_equity_underflow_is_not_reported_as_total_loss():
+    with pytest.raises(ValueError, match="underflow"):
+        equity_curve([-0.9] * 400)
+    assert equity_curve([-1.0, 0.5]) == (1.0, 0.0, 0.0)

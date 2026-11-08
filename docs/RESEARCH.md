@@ -34,13 +34,24 @@ For `n` observed intervals and `K` intervals per year:
 
 Sharpe is `null` when there are fewer than two returns or sample volatility is zero. Annualised volatility is also `null` with fewer than two observations. The default `K=252` assumes trading-day intervals; the program neither infers the calendar frequency nor fills missing sessions. These are **descriptive metrics**, not uncertainty estimates.
 
+Calculations use binary floating point. Before reporting an asset or post-cost
+return, the model checks that converting its positive growth factor to `r` and
+back to `1 + r` preserves that factor within `1e-10` relative error (zero absolute
+tolerance). Extreme losses that fail this check are rejected: otherwise a price
+round trip such as `1 → 1e-16 → 1` can manufacture a gain through cancellation.
+This is a per-interval representation check, not a bound on cumulative error.
+Positive equity that underflows to zero is also rejected; an explicitly supplied
+return of -1 still represents a genuine total loss in the statistics API.
+
 ## Signal timing
 
 The fixed momentum rule targets weight 1 (fully invested) when the current adjusted close exceeds the price `lookback` observations earlier. Otherwise it targets weight 0 (cash).
 
 A signal determined at close `t` applies to the return **from `t` to `t+1`**, not the return ending at `t`. Tests check that later observations cannot change earlier signals.
 
-**Execution limitation:** The model assumes a position based on the close can be filled at that same close. Real trading would need an explicit order-timing convention and subsequent execution prices. Using a lagged return prevents direct signal/return look-ahead in the model, but does not make this fill assumption realistic.
+**Execution modes:** `execution_lag=0` preserves the original idealised signal-close fill. `execution_lag=1` instead uses the signal from `t-1` for a fill at `t`, earning only `t` to `t+1`. This avoids requiring the current close to decide an order filled at that close. It is a delay in **observations**, not calendar days. The first valuation requires `lookback + execution_lag` prior observations.
+
+**Remaining limitation:** next-close execution still assumes an achievable adjusted-close fill, constant proportional costs and no order constraints. It does not model next-open execution, intraday prices, corporate-action cash flows or liquidity. The earlier signal can be submitted before the execution close, but historical adjusted prices are not themselves an executable quote. Neither mode establishes real trading feasibility.
 
 ## Transaction costs and portfolio drift
 
@@ -78,9 +89,11 @@ The rate approximates constant proportional fees and slippage; it does not model
 
 ## Evaluation and reproducibility
 
-`--test-start` selects an observation with sufficient preceding history. Earlier prices are used only to calculate signals, not to fit parameters. Strategy and buy-and-hold start flat over the same evaluation period and pay applicable entry costs.
+`--test-start` and optional `--test-end` select inclusive valuation dates present in the CSV. At least three prices (two intervals) are required. Earlier prices provide signal warm-up, not fitting or a reported training backtest. The last valuation has no subsequent executed trade. Every variant uses exactly the same dates; insufficient history for **any** declared lookback fails the entire experiment instead of shortening its horizon.
 
-CLI JSON records the input SHA-256, settings, positions, returns, turnover, costs and metrics. The bundled price series is deterministic and synthetic.
+Strategy, buy-and-hold and zero-return cash start flat over that period. The predeclared buy-and-hold baseline enters immediately at the first valuation close in both execution modes; it needs no momentum signal or delay. Both invested models pay applicable initial entry costs. Cash has zero turnover, costs and return; its Sharpe is undefined (`null`).
+
+CLI JSON records the input SHA-256, settings, positions, returns, turnover, costs and metrics. The bytes hashed are the same snapshot parsed. `valuation_dates[i:i+2]` brackets return `i`; `signal_dates[i]` dates the strategy information used for that interval. The bundled price series is deterministic and synthetic.
 
 A chronological evaluation period is **not** automatically an untouched holdout: inspecting results and then changing strategy settings creates selection bias. The baseline does not estimate significance or correct for multiple comparisons.
 
@@ -93,3 +106,26 @@ A chronological evaluation period is **not** automatically an untouched holdout:
 5. **Report uncertainty:** choose methods suited to dependent time-series observations, rather than trusting a single Sharpe ratio.
 
 Multiple assets, realistic execution and model fitting remain outside this small baseline.
+
+## Declared experiment files
+
+Run `uv run quant-research --experiment examples/synthetic_experiment.json`. The [complete example](../examples/synthetic_experiment.json) is schema version 1, with these required fields:
+
+| Field | Meaning |
+| --- | --- |
+| `name`, `hypothesis` | Nonempty human-readable declaration of the research question |
+| `data.path`, `data.sha256` | Local snapshot, relative to the configuration file, and its exact SHA-256 |
+| `data.provenance` | `kind` (`synthetic` or `market`), `source`, `licence`, `adjustments`, `retrieved_at`, `limitations`; all descriptive text |
+| `evaluation.start`, `evaluation.end` | Inclusive ISO valuation dates; endpoints must be observed |
+| `evaluation.role` | `development` or `declared_holdout` |
+| `parameters.lookbacks`, `parameters.cost_bps` | Nonempty, duplicate-free lists; every Cartesian pair is reported |
+| `parameters.periods_per_year` | Positive integer observation frequency for annualisation |
+| `parameters.execution_lag` | 0 or 1; explicit for reproducibility |
+
+Unknown keys, duplicate JSON keys, nonfinite numbers, invalid parameters and checksum mismatches are errors. Provenance is recorded, **not independently certified**. For generated inputs, say why retrieval is inapplicable; for market inputs, supply an actual retrieval date and verified licensing/adjustment details. No data are downloaded.
+
+A `declared_holdout` permits only one lookback and one cost setting. This is a guard against accidental sensitivity exploration, not a security barrier or proof of preregistration. Commit the declaration before inspecting evaluation results and retain all prior investigations. If results influence changes, treat that period as development and obtain new evaluation data.
+
+The report retains raw-configuration SHA-256, parsed configuration, input SHA-256, hashes of installed package Python sources, Python version, all full paths and a flat `comparison` array. Run numbers index `runs`; rows preserve declaration order and are **not ranked by performance**. Buy-and-hold and cash repeat for each grid cell so every comparison is self-contained. No timestamp is injected: unchanged inputs, source and interpreter produce deterministic JSON. Retain the Git commit, report, configuration, CSV and `uv.lock` together; hashes identify files but cannot recover missing snapshots.
+
+The nine-setting example uses 36 intervals from 2024-02-01 through 2024-03-22 with lag 1. Existing single-run commands and the portfolio film retain lag 0 and their original numerical results. Sensitivity is descriptive; it does not estimate uncertainty, correct multiple testing or identify a profitable strategy.

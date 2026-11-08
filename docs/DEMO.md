@@ -2,7 +2,7 @@
 
 The README embeds an **eight-second looping GIF** (`docs/media/preview.gif`) linked to a complete **38-second, silent 1080p MP4** (`docs/media/demo.mp4`).
 
-The media shows results from the existing **synthetic** price example. It does not depict live trading or demonstrate a profitable strategy.
+The media shows results from the existing **synthetic** price example. It retains the original signal-close execution (`execution_lag=0`); the new declared experiment uses lag 1 and does not replace this recording. It does not depict live trading or demonstrate a profitable strategy.
 
 ## Generate
 
