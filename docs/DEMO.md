@@ -2,7 +2,7 @@
 
 The README embeds an **eight-second looping GIF** (`docs/media/preview.gif`) linked to a complete **38-second, silent 1080p MP4** (`docs/media/demo.mp4`).
 
-The media shows results from the existing **synthetic** price example. It retains the original signal-close execution (`execution_lag=0`); the new declared experiment uses lag 1 and does not replace this recording. It does not depict live trading or demonstrate a profitable strategy.
+The media shows results from the existing **synthetic** price example. It retains the original signal-close execution (`execution_lag=0`). The new declared experiment uses lag 1 and does not replace this recording. It does not depict live trading or demonstrate a profitable strategy.
 
 ## Generate
 
@@ -25,8 +25,8 @@ uv run --locked --extra demo python scripts/render_demo.py --stills-only --outpu
 
 | Time | Content |
 | --- | --- |
-| 0–9 s | Synthetic prices, evaluation start and next-interval positions |
-| 9–18 s | A cash signal, its next return interval and the exit fee |
+| 0–9 s | Synthetic prices, evaluation start, and next-interval positions |
+| 9–18 s | A cash signal, its next return interval, and the exit fee |
 | 18–28 s | Net strategy vs buy-and-hold wealth and risk metrics |
 | 28–38 s | Fixed sensitivity checks for costs and lookback periods |
 
@@ -46,7 +46,7 @@ These figures describe the committed recording, not forecasts or evidence of gen
 
 **Signal timing:** A 7 February cash signal applies to the subsequent return interval. The example records a −0.908% asset return and a −0.100% strategy return from the exit fee. The strategy does not capture the move that generated the signal.
 
-The model assumes idealised close fills, proportional costs, a zero-return cash position and no final liquidation. With only 36 intervals, annualised volatility and zero-risk-free Sharpe are descriptive, not statistically validated estimates. See [research methods](RESEARCH.md).
+The model assumes idealised close fills, proportional costs, a zero-return cash position, and no final liquidation. With only 36 intervals, annualised volatility and zero-risk-free Sharpe are descriptive, not statistically validated estimates. See [research methods](RESEARCH.md).
 
 ## Validate
 
@@ -58,6 +58,6 @@ ffmpeg -v error -i docs/media/demo.mp4 -f null -
 ffmpeg -v error -i docs/media/preview.gif -f null -
 ```
 
-Tests compare the recorded CLI paths and metrics, timing, costs, evaluation horizons and deterministic output. Encoded media bytes can vary with FFmpeg and font versions.
+Tests compare the recorded CLI paths and metrics, timing, costs, evaluation horizons, and deterministic output. Encoded media bytes can vary with FFmpeg and font versions.
 
-**When updating the media:** regenerate and commit the MP4, GIF and JSON together. The README's MP4 URL is pinned to a media commit and needs updating whenever the video changes.
+**When updating the media:** regenerate and commit the MP4, GIF, and JSON together. The README's MP4 URL is pinned to a media commit and needs updating whenever the video changes.
