@@ -58,3 +58,19 @@ def test_audit_lists_gaps_without_filling():
     series = PriceSeries((date(2016, 1, 4), date(2016, 1, 6)), (100, 101))
     assert audit(series)["absent_weekdays"] == ["2016-01-05"]
     assert audit(series)["observations"] == 2
+
+
+@pytest.mark.parametrize(
+    "start,end",
+    [
+        ("2015-12-31", "2016-01-06"),
+        ("2016-01-04", "2016-01-10"),
+        ("2016-01-06", "2016-01-04"),
+    ],
+)
+def test_period_rejects_truncation_and_reversed_bounds(start, end):
+    series = PriceSeries(
+        tuple(date(2016, 1, d) for d in range(4, 9)), (100, 101, 102, 103, 104)
+    )
+    with pytest.raises(ValueError, match="coverage"):
+        period_run(series, start, end, 1, 10)

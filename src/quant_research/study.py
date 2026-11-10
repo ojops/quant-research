@@ -11,6 +11,7 @@ from datetime import date, timedelta
 from pathlib import Path
 from statistics import mean
 
+from quant_research.analysis import equity_curve
 from quant_research.data import PriceSeries, parse_prices
 from quant_research.evaluation import evaluate
 
@@ -51,8 +52,6 @@ def paired_block_interval(
     if type(repeats) is not int or repeats < 2:
         raise ValueError("repeats must be an integer >= 2")
     # Existing validation rejects NaN, infinities and invalid return domains.
-    from quant_research.analysis import equity_curve
-
     equity_curve(strategy)
     equity_curve(benchmark)
     differences = [a - b for a, b in zip(strategy, benchmark)]
@@ -109,11 +108,10 @@ def audit(series: PriceSeries):
 
 
 def period_run(series, start, end, lookback, cost):
-    available = [
-        d
-        for d in series.dates
-        if date.fromisoformat(start) <= d <= date.fromisoformat(end)
-    ]
+    start, end = date.fromisoformat(start), date.fromisoformat(end)
+    if start > end or start < series.dates[0] or end > series.dates[-1]:
+        raise ValueError("Requested period must be ordered and within source coverage")
+    available = [d for d in series.dates if start <= d <= end]
     if len(available) < 3:
         raise ValueError("Insufficient observations in requested period")
     return evaluate(
