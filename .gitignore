@@ -218,3 +218,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Third-party financial data: fetch locally; not licensed by this code repository.
+/research/local/
