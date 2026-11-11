@@ -12,6 +12,33 @@ Validate a price series, backtest a fixed momentum rule with trading costs, and 
 
 The bundled synthetic example tests the implementation. A separate [completed historical AAPL pilot](research/results/apple-momentum.md) investigates archived market prices with a fixed protocol, chronological evaluation, cost/lookback sensitivity and paired block-bootstrap uncertainty. This is a limited retrospective study, **not** a genuinely unseen test or evidence of general profitability.
 
+## Longer-history follow-up
+
+The [industry study](research/results/industry-momentum.md) extends evaluation to
+12 diversified research portfolios using a checksum-pinned monthly archive
+(1949–2017), with 1980–1999 development and 2000–2016 evaluation. It checks calendar
+continuity and decimal-return units, includes the historical cash rate, preserves
+all declared sensitivity results and reports paired block-bootstrap uncertainty.
+
+The fixed 12-month/10-bps rule returned **6.14% annualised** versus **6.86%** for
+buy-and-hold, with maximum drawdown **−20.72%** versus **−47.09%** in evaluation.
+All three intervals for the aggregate mean return difference include zero.
+This is broader retrospective evidence of a return/drawdown trade-off, not proof
+of predictive skill. Research portfolios are not directly executable instruments;
+archived adjustments and current upstream revisions are not independently verified.
+
+```bash
+uv run python -m quant_research.followup --download
+uv run python -m quant_research.followup
+```
+
+The first command downloads and verifies the fixed archive into ignored local
+data. The second runs offline and writes the [report](research/results/industry-momentum.md)
+and [full metrics](research/results/industry-momentum.json). Read the
+[protocol](docs/FOLLOWUP_PLAN.md) for the frozen settings and evaluation boundaries.
+The historical cash-rate extension is optional; existing backtests still default
+to zero cash return. Monthly and daily study results should not be conflated.
+
 ## Research result and reproduction
 
 On the fixed 2016 evaluation, the 20-observation momentum rule at 10 bps turnover cost returned **8.61%**, versus **12.27%** for buy-and-hold. Maximum drawdown was **−11.69%** versus **−18.92%**. The lower drawdown came with lower return; all three bootstrap intervals for the mean return difference include zero. Costs and lookback materially affect results. No setting is selected or promoted as a profitable strategy.

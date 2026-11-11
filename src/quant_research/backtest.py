@@ -27,13 +27,27 @@ def momentum_weights(prices, lookback=5) -> tuple[float, ...]:
     )
 
 
-def run_backtest(prices, targets, cost_bps=0.0) -> BacktestResult:
+def run_backtest(prices, targets, cost_bps=0.0, *, cash_returns=None) -> BacktestResult:
     """Backtest next-interval positions using post-cost target weights.
 
-    Cash earns zero. Trading costs use a constant proportional rate; no final
+    Cash earns zero unless one return per interval is supplied.
+    Trading costs use a constant proportional rate; no final
     liquidation is forced.
     """
     asset_returns = simple_returns(prices)
+    cash_returns = (
+        tuple(cash_returns) if cash_returns is not None else (0.0,) * len(asset_returns)
+    )
+    if len(cash_returns) != len(asset_returns) or any(
+        isinstance(r, bool)
+        or not isinstance(r, (int, float))
+        or not isfinite(r)
+        or r <= -1
+        for r in cash_returns
+    ):
+        raise ValueError(
+            "Cash returns must be finite, greater than -1 and match intervals"
+        )
     targets = tuple(targets)
     if len(targets) != len(prices):
         raise ValueError(
@@ -61,12 +75,12 @@ def run_backtest(prices, targets, cost_bps=0.0) -> BacktestResult:
     drifted = 0.0
     returns, positions, turnover, costs = [], [], [], []
 
-    for target, asset_return in zip(targets, asset_returns):
+    for target, asset_return, cash_return in zip(targets, asset_returns, cash_returns):
         # Solve fee = rate * abs(target * (1 - fee) - drifted)
         denominator = 1 + rate * target if target >= drifted else 1 - rate * target
         fee = rate * abs(target - drifted) / denominator
         traded = abs(target * (1 - fee) - drifted)
-        gross = 1 + target * asset_return
+        gross = 1 + target * asset_return + (1 - target) * cash_return
 
         returns.append(return_from_growth((1 - fee) * gross))
         positions.append(target)

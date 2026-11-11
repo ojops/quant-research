@@ -38,13 +38,15 @@ def normalize_snapshot(raw: bytes) -> str:
 
 
 def paired_block_interval(
-    strategy, benchmark, *, block_size=20, repeats=2000, seed=2026
+    strategy, benchmark, *, block_size=20, repeats=2000, seed=2026, periods_per_year=252
 ):
     """Circular paired block bootstrap of annualised arithmetic mean difference.
 
     Blocks preserve local serial dependence, not structural breaks. Intervals
     are descriptive percentile intervals, not multiplicity-adjusted inference.
     """
+    if type(periods_per_year) is not int or periods_per_year < 1:
+        raise ValueError("periods_per_year must be a positive integer")
     if len(strategy) != len(benchmark) or len(strategy) < 2:
         raise ValueError("Paired return arrays must have equal length >= 2")
     if type(block_size) is not int or not 1 <= block_size <= len(strategy):
@@ -66,7 +68,7 @@ def paired_block_interval(
                 differences[(start + j) % n]
                 for j in range(min(block_size, n - len(sample)))
             )
-        estimates.append(252 * mean(sample))
+        estimates.append(periods_per_year * mean(sample))
     estimates.sort()
 
     def percentile(p):
@@ -80,7 +82,7 @@ def paired_block_interval(
 
     return {
         "estimand": "annualised arithmetic mean strategy-minus-buy-and-hold daily return; not CAGR",
-        "estimate": 252 * mean(differences),
+        "estimate": periods_per_year * mean(differences),
         "percentile_95": [percentile(0.025), percentile(0.975)],
         "block_size": block_size,
         "replications": repeats,
