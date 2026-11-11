@@ -10,7 +10,31 @@ A Python project for reproducible single-asset return analysis and cost-aware ba
 
 Validate a price series, backtest a fixed momentum rule with trading costs, and compare it with buy-and-hold and cash. Experiment files record the hypothesis, data provenance, evaluation period, and parameter comparisons alongside input and source checksums.
 
-The bundled prices are **synthetic**. Real-data evaluation and statistical validation remain future work.
+The bundled synthetic example tests the implementation. A separate [completed historical AAPL pilot](research/results/apple-momentum.md) investigates archived market prices with a fixed protocol, chronological evaluation, cost/lookback sensitivity and paired block-bootstrap uncertainty. This is a limited retrospective study, **not** a genuinely unseen test or evidence of general profitability.
+
+## Research result and reproduction
+
+On the fixed 2016 evaluation, the 20-observation momentum rule at 10 bps turnover cost returned **8.61%**, versus **12.27%** for buy-and-hold. Maximum drawdown was **−11.69%** versus **−18.92%**. The lower drawdown came with lower return; all three bootstrap intervals for the mean return difference include zero. Costs and lookback materially affect results. No setting is selected or promoted as a profitable strategy.
+
+After installation, reproduce the complete report with:
+
+```bash
+uv run python scripts/fetch_study_data.py
+uv run python -m quant_research.study
+```
+
+The first command needs network access to `raw.githubusercontent.com`; it verifies the immutable source checksum before writing local data. The second is offline and writes `research/results/apple-momentum.json` and `.md`. Raw/normalised third-party prices remain ignored by Git. All calculation settings and bootstrap seeds are explicit; Python and implementation metadata are retained.
+
+Read [the fixed protocol](docs/STUDY_PLAN.md), [findings and limitations](research/results/apple-momentum.md), and [machine-readable results](research/results/apple-momentum.json). JSON includes source hashes, the data-quality audit, every sensitivity setting, fixed-rule paths and uncertainty calculations. This is one retrospectively chosen stock from 2015–2017; 2017 is excluded from every reported evaluation. It does not establish broad or live trading performance.
+
+### What to inspect
+
+- `backtest.py` and `evaluation.py`: portfolio accounting and causal signal/execution timing.
+- `experiment.py`: declared synthetic/custom experiments and provenance checks.
+- `study.py`: fixed historical design, data audit, paired block bootstrap and report generation.
+- `tests/test_study.py`: paired-return checks, checksum rejection and future-data invariance; existing tests cover the underlying accounting.
+
+The historical runner builds on the existing backtester. It performs no fitting, automatic parameter selection or machine learning.
 
 ## Features
 
@@ -24,7 +48,7 @@ The bundled prices are **synthetic**. Real-data evaluation and statistical valid
 - Choose idealised signal-close or delayed next-close execution
 - Export results, dated return paths, parameters, and comparisons as JSON
 
-The implementation covers **one asset** with idealised close-based execution. It does not download data, fit parameters, or trade live.
+The implementation covers **one asset** with idealised close-based execution. The core CLI does not download data, fit parameters, or trade live; the separate study fetch script downloads one fixed snapshot.
 
 ## Requirements and Installation
 
@@ -73,13 +97,13 @@ Experiment roles distinguish development grids from a declared holdout with one 
 
 ## Development Roadmap
 
-The priority is to progress from a reproducible synthetic backtest to defensible empirical research. Improving the experimental methodology takes precedence over adding visual effects.
+The historical pilot is complete; the priority is now broader, independently validated empirical research. Improving the experimental methodology takes precedence over adding visual effects.
 
 ### Planned
 
-- **Use traceable real market data:** verify sources, licences, adjustments, and immutable snapshots. Audit missing observations, and selection bias.
-- **Conduct a genuinely untouched evaluation:** preregister a hypothesis and one fixed setting, retain development comparisons, and evaluate new data once. Configuration support exists, but empirical validation remains outstanding.
-- **Assess uncertainty:** add methods suited to dependent returns and multiple comparisons before interpreting sensitivity tables as evidence.
+- **Broaden the historical pilot:** obtain longer, independently checked multi-asset data with clear data rights and corporate-action treatment; audit missing sessions against exchange calendars.
+- **Conduct a genuinely untouched evaluation:** preregister a hypothesis and one fixed setting, retain development comparisons, and evaluate new data once. The completed historical pilot does not satisfy this prospective goal.
+- **Extend uncertainty assessment:** the pilot includes paired circular-block intervals; investigate structural breaks and multiple-comparison controls before making inferential claims.
 - **Validate execution and visuals:** test next-close assumptions against executable prices and order timing. Generalise chart dates and labels beyond the fixed synthetic film.
 
 ## Project Structure
@@ -95,8 +119,10 @@ quant-research/
 │   ├── backtest.py                # Signals and cost-aware backtesting
 │   ├── evaluation.py              # Common horizons, timing, and cash baseline
 │   ├── experiment.py              # Configuration, provenance, and comparisons
+│   ├── study.py                   # Historical pilot and uncertainty report
 │   └── main.py                    # CLI and JSON reporting
-├── scripts/                       # Portfolio video rendering
+├── research/results/              # Completed historical pilot and JSON evidence
+├── scripts/                       # Data fetch and portfolio video rendering
 ├── tests/                         # Research and demonstration tests
 ├── docs/                          # Research and demo documentation
 │   └── media/                     # Preview GIF, MP4, and recorded data
@@ -117,4 +143,4 @@ When changing dependencies, commit both `pyproject.toml` and `uv.lock`. GitHub A
 
 ## License
 
-[MIT licensed](LICENSE).
+Code is [MIT licensed](LICENSE). Third-party financial data is not relicensed by this repository; the study downloader keeps it local.
