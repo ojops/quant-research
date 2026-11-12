@@ -60,12 +60,12 @@ Lag 0 assumes an idealised fill at the close used to form the signal. Lag 1 avoi
 
 ## Transaction costs and portfolio drift
 
-Costs are proportional to value traded, including rebalancing caused by portfolio weight drift.
+Costs are proportional to value traded, including rebalancing caused by portfolio weight drift. In the formulas below, `r_cash` is the interval’s cash return. It defaults to zero; the monthly follow-up supplies historical cash returns.
 
 For a previous target weight `w` and asset return `r`, the asset's weight before the next rebalance is:
 
 ```text
-x = w × (1 + r) / (1 + w × r)
+x = w × (1 + r) / (1 + w × r + (1 - w) × r_cash)
 ```
 
 Define `c = cost_bps / 10000`, `x` as the pretrade weight, `w` as the **post-cost** target weight, and `f` as fees divided by pretrade wealth. The accounting identity is:
@@ -85,7 +85,7 @@ The recorded turnover and next net return are:
 
 ```text
 turnover   = abs(w × (1 - f) - x)
-net_return = (1 - f) × (1 + w × r) - 1
+net_return = (1 - f) × (1 + w × r + (1 - w) × r_cash) - 1
 ```
 
 Fees reduce investable capital. With flat prices, entering fully and then exiting leaves wealth `(1 - c) / (1 + c)`, rather than exactly `(1 - c)^2`.
@@ -137,3 +137,12 @@ Reports retain the raw-configuration and input SHA-256 checksums, parsed configu
 No timestamp is injected. Unchanged inputs, source, and interpreter produce deterministic JSON. Archive the Git commit, report, configuration, CSV, and `uv.lock` together. Hashes identify files but cannot recover missing snapshots.
 
 The nine-setting example uses 36 intervals from 2024-02-01 through 2024-03-22 with lag 1. Existing single-run commands and the portfolio film retain lag 0 and their original numerical results. Sensitivity is descriptive. It does not estimate uncertainty, correct multiple testing, or identify a profitable strategy.
+
+## Efficient uncertainty calculations
+
+The paired bootstrap reuses circular block totals instead of building a full
+return array for every resample. It retains the same seeded block draws, including
+a shortened final block. Tests compare its percentile intervals with direct
+resampling. Floating-point summation can differ in the last few digits. This
+changes computation cost, not the declared research protocol. Committed historical
+reports retain their original implementation hashes; reruns record current hashes.

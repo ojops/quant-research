@@ -10,7 +10,36 @@ A Python project for reproducible single-asset return analysis and cost-aware ba
 
 Validate a price series, backtest a fixed momentum rule with trading costs, and compare it with buy-and-hold and cash. Experiment files record the hypothesis, data provenance, evaluation period, and parameter comparisons alongside input and source checksums.
 
-The bundled synthetic example tests the implementation. A separate [completed historical AAPL pilot](research/results/apple-momentum.md) investigates archived market prices with a fixed protocol, chronological evaluation, cost/lookback sensitivity and paired block-bootstrap uncertainty. This is a limited retrospective study, **not** a genuinely unseen test or evidence of general profitability.
+The bundled synthetic example tests the implementation. A separate [completed historical AAPL pilot](research/results/apple-momentum.md) investigates archived market prices with a fixed protocol, chronological evaluation, cost and lookback comparisons, and uncertainty estimated by paired block resampling. This is a limited retrospective study, **not** an untouched test or evidence of general profitability.
+
+## Longer-history follow-up
+
+The [industry study](research/results/industry-momentum.md) extends evaluation to
+12 diversified research portfolios using a checksum-pinned monthly archive
+(1949–2017), with 1980–1999 development and 2000–2016 evaluation. It checks calendar
+continuity and decimal-return units, includes the historical cash rate, preserves
+all declared sensitivity results, and reports paired block-bootstrap uncertainty.
+
+The fixed 12-month/10-bps rule returned **6.14% annualised** versus **6.86%** for
+buy-and-hold, with maximum drawdown **−20.72%** versus **−47.09%** in evaluation.
+All three intervals for the aggregate mean return difference include zero.
+This is broader retrospective evidence of a return/drawdown trade-off, not proof
+of predictive skill. Research portfolios are not directly tradable instruments;
+archived adjustments and current upstream revisions are not independently verified.
+
+```bash
+uv run python -m quant_research.followup --download
+uv run python -m quant_research.followup
+```
+
+The first command downloads and verifies the fixed archive into ignored local
+data. The second runs offline and writes the [report](research/results/industry-momentum.md)
+and [full metrics](research/results/industry-momentum.json). Read the
+[protocol](docs/FOLLOWUP_PLAN.md) for the frozen settings and evaluation boundaries.
+The historical cash-rate extension is optional; existing backtests still default
+to zero cash return. The monthly follow-up and daily pilot use different
+frequencies and instruments,
+so their results are not directly comparable.
 
 ## Research result and reproduction
 
@@ -91,17 +120,19 @@ JSON output includes dated paths, metrics, settings, and the input checksum for 
 
 Momentum targets full investment when the current price exceeds the price `lookback` observations earlier, and cash otherwise.
 
-The default `--execution-lag 0` assumes a fill at the signal close and earns the following interval. Lag 1 fills at the next observed close and earns the interval after that. Both use idealised adjusted-close fills. Models start in cash, pay applicable entry and rebalancing costs, and have no forced final liquidation. Cash and the risk-free rate are zero.
+The default `--execution-lag 0` assumes a fill at the signal close and earns the following interval. Lag 1 fills at the next observed close and earns the interval after that. Both use idealised adjusted-close fills. Models start in cash, pay applicable entry and rebalancing costs, and have no forced final liquidation. The core CLI assumes zero cash return and a zero risk-free rate. The monthly
+follow-up instead uses the archive’s historical cash returns and reports Sharpe
+relative to those returns.
 
 Experiment roles distinguish development grids from a declared holdout with one fixed setting. The declaration cannot prove the data were untouched. A chronological evaluation period alone does not establish statistical significance. See [research and accounting notes](docs/RESEARCH.md).
 
 ## Development Roadmap
 
-The historical pilot is complete; the priority is now broader, independently validated empirical research. Improving the experimental methodology takes precedence over adding visual effects.
+The AAPL pilot and longer industry study are complete. The next priorities are independent data checks and a prospective evaluation.
 
 ### Planned
 
-- **Broaden the historical pilot:** obtain longer, independently checked multi-asset data with clear data rights and corporate-action treatment; audit missing sessions against exchange calendars.
+- **Independently check the data:** reconcile the industry archive with another source, check data rights and adjustments, and audit the daily pilot against an exchange calendar.
 - **Conduct a genuinely untouched evaluation:** preregister a hypothesis and one fixed setting, retain development comparisons, and evaluate new data once. The completed historical pilot does not satisfy this prospective goal.
 - **Extend uncertainty assessment:** the pilot includes paired circular-block intervals; investigate structural breaks and multiple-comparison controls before making inferential claims.
 - **Validate execution and visuals:** test next-close assumptions against executable prices and order timing. Generalise chart dates and labels beyond the fixed synthetic film.
@@ -120,8 +151,9 @@ quant-research/
 │   ├── evaluation.py              # Common horizons, timing, and cash baseline
 │   ├── experiment.py              # Configuration, provenance, and comparisons
 │   ├── study.py                   # Historical pilot and uncertainty report
+│   ├── followup.py                # Monthly industry study with cash returns
 │   └── main.py                    # CLI and JSON reporting
-├── research/results/              # Completed historical pilot and JSON evidence
+├── research/results/              # Historical studies and JSON evidence
 ├── scripts/                       # Data fetch and portfolio video rendering
 ├── tests/                         # Research and demonstration tests
 ├── docs/                          # Research and demo documentation

@@ -15,13 +15,14 @@
     "__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "__main__.py": "df36353c6d70e3108883b8ed2414e7da80a08b17be33a616cfd1a01af3277c2d",
     "analysis.py": "21e71f5b133efadd7908136489e377ae5f1d025ae39c28bafd16556a493c1fbd",
-    "backtest.py": "d2f4bfcd971b6549b4abf8b7eb96f78aeaf6c37ddf3a516e94586498ebf38f09",
+    "backtest.py": "61dcfc533dafde46fae37fb6d1ed3768eb2d19f1ad257826d230aa60869bacb3",
     "data.py": "e9c0b1679a93cf95357843bc2f85ceccff787d5e28a3468589fcb32217fc7938",
     "demo_data.py": "463e0ace4d87ac1c23b8a454fbc6810251dd7dafbe6c216f521291fa385ece5d",
     "evaluation.py": "ac91272cce2cc3ba9a2d4b4570370f655ed65a79a8dc4f649f7fd0ad9b5f6dbc",
     "experiment.py": "a19592ef69a9a0686b8bff7f2df2b66e8454348fa32c1ce7c0c13f0ae00be083",
+    "followup.py": "219be7c7105a4f5942e7842dfccd11375402a700a2c706d91428773d90644fe8",
     "main.py": "128df002206053d762e7770ff4661ab9dde82f07a8c10bfbdd09a6ac62568e01",
-    "study.py": "87e7f58fc5e1a6ee78348055f79142d8335bbde58d2a986b780e8ca220c76ff8"
+    "study.py": "27a9e406b904a355630ac69785428625596dc6da804f17be744f87ecb39b96cb"
   },
   "data_audit": {
     "observations": 506,
