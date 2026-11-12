@@ -8,6 +8,7 @@ import json
 import platform
 import random
 from datetime import date, timedelta
+from math import fsum
 from pathlib import Path
 from statistics import mean
 
@@ -59,16 +60,24 @@ def paired_block_interval(
     differences = [a - b for a, b in zip(strategy, benchmark)]
     n = len(differences)
     rng = random.Random(seed)
+    # Only the resampled mean is needed. Reuse circular block totals instead
+    # of allocating and summing a full return sample for every replication.
+    full_blocks, remainder = divmod(n, block_size)
+
+    def block_totals(length):
+        return [
+            fsum(differences[(start + j) % n] for j in range(length))
+            for start in range(n)
+        ]
+
+    totals = block_totals(block_size)
+    tails = block_totals(remainder) if remainder else []
     estimates = []
     for _ in range(repeats):
-        sample = []
-        while len(sample) < n:
-            start = rng.randrange(n)
-            sample.extend(
-                differences[(start + j) % n]
-                for j in range(min(block_size, n - len(sample)))
-            )
-        estimates.append(periods_per_year * mean(sample))
+        sample_totals = [totals[rng.randrange(n)] for _ in range(full_blocks)]
+        if remainder:
+            sample_totals.append(tails[rng.randrange(n)])
+        estimates.append(periods_per_year * (fsum(sample_totals) / n))
     estimates.sort()
 
     def percentile(p):
@@ -81,7 +90,7 @@ def paired_block_interval(
         )
 
     return {
-        "estimand": "annualised arithmetic mean strategy-minus-buy-and-hold daily return; not CAGR",
+        "estimand": "annualised arithmetic mean strategy-minus-buy-and-hold per-period return; not CAGR",
         "estimate": periods_per_year * mean(differences),
         "percentile_95": [percentile(0.025), percentile(0.975)],
         "block_size": block_size,

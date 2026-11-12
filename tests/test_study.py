@@ -74,3 +74,46 @@ def test_period_rejects_truncation_and_reversed_bounds(start, end):
     )
     with pytest.raises(ValueError, match="coverage"):
         period_run(series, start, end, 1, 10)
+
+
+@pytest.mark.parametrize("block_size", [1, 4, 7, 23])
+@pytest.mark.parametrize("periods_per_year", [12, 252])
+def test_block_totals_match_direct_seeded_resampling(block_size, periods_per_year):
+    import random
+    from statistics import mean
+
+    from quant_research.study import paired_block_interval
+
+    strategy = [0.02 * ((i % 5) - 2) for i in range(23)]
+    benchmark = [0.003 * (i % 3) for i in range(23)]
+    differences = [a - b for a, b in zip(strategy, benchmark)]
+    rng = random.Random(81)
+    estimates = []
+    for _ in range(200):
+        sample = []
+        while len(sample) < len(differences):
+            start = rng.randrange(len(differences))
+            sample.extend(
+                differences[(start + j) % len(differences)]
+                for j in range(min(block_size, len(differences) - len(sample)))
+            )
+        estimates.append(periods_per_year * mean(sample))
+    estimates.sort()
+    expected = []
+    for probability in (0.025, 0.975):
+        position = (len(estimates) - 1) * probability
+        index = int(position)
+        fraction = position - index
+        expected.append(
+            estimates[index] * (1 - fraction) + estimates[index + 1] * fraction
+        )
+    actual = paired_block_interval(
+        strategy,
+        benchmark,
+        block_size=block_size,
+        repeats=200,
+        seed=81,
+        periods_per_year=periods_per_year,
+    )
+    assert actual["percentile_95"] == pytest.approx(expected, rel=1e-13, abs=1e-14)
+    assert "daily" not in actual["estimand"]
