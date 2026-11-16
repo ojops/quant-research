@@ -130,6 +130,9 @@ Experiment roles distinguish development grids from a declared holdout with one 
 
 The AAPL pilot and longer industry study are complete. The next priorities are independent data checks and a prospective evaluation.
 
+The [research roadmap](https://github.com/ojops/quant-research/issues/7) gives the
+order of work and completion criteria, including exposure analysis and readable reports.
+
 ### Planned
 
 - **Independently check the data:** reconcile the industry archive with another source, check data rights and adjustments, and audit the daily pilot against an exchange calendar.
@@ -167,11 +170,15 @@ quant-research/
 
 ```bash
 uv run pytest
+uv run python scripts/check_report_provenance.py
 uv run ruff check .
 uv run ruff format --check .
 ```
 
 When changing dependencies, commit both `pyproject.toml` and `uv.lock`. GitHub Actions runs automated checks. See [coding conventions](docs/STYLE.md).
+
+After implementation changes, [regenerate the saved studies](docs/RESEARCH.md#keeping-the-saved-studies-current)
+and review the numerical differences. CI checks their recorded source hashes offline.
 
 ## License
 
