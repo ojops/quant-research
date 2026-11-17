@@ -128,17 +128,18 @@ Experiment roles distinguish development grids from a declared holdout with one 
 
 ## Development Roadmap
 
-The AAPL pilot and longer industry study are complete. The next priorities are independent data checks and a prospective evaluation.
-
-The [research roadmap](https://github.com/ojops/quant-research/issues/7) gives the
-order of work and completion criteria, including exposure analysis and readable reports.
+The AAPL pilot and longer industry study are complete. The next priorities are checking the data independently and understanding the return/drawdown trade-off.
 
 ### Planned
 
-- **Independently check the data:** reconcile the industry archive with another source, check data rights and adjustments, and audit the daily pilot against an exchange calendar.
-- **Conduct a genuinely untouched evaluation:** preregister a hypothesis and one fixed setting, retain development comparisons, and evaluate new data once. The completed historical pilot does not satisfy this prospective goal.
-- **Extend uncertainty assessment:** the pilot includes paired circular-block intervals; investigate structural breaks and multiple-comparison controls before making inferential claims.
+- **Independently check the data:** reconcile the industry archive with another source, recording data rights, retrieval dates, units, adjustments, and unresolved differences. Audit the daily pilot against an exchange calendar without changing the frozen study snapshots.
+- **Explain exposure and drawdown:** measure time invested, turnover, and contributions from the asset and cash. Define an exposure-matched benchmark using development data, then compare returns, drawdown, and uncertainty over the same evaluation period.
+- **Make results easier to inspect:** generate a short metrics table and equity/drawdown charts from the existing JSON results. Include dates, frequency, costs, execution lag, and cash assumptions, and check displayed values against the saved results.
+- **Conduct a prospective evaluation:** record one hypothesis, universe, fixed rule, data source, execution assumptions, and evaluation schedule before collecting new observations. Keep operational checks separate from rule changes and report the outcome at the declared endpoint, including negative findings.
+- **Extend uncertainty assessment:** investigate structural breaks and multiple-comparison controls alongside the existing paired block intervals.
 - **Validate execution and visuals:** test next-close assumptions against executable prices and order timing. Generalise chart dates and labels beyond the fixed synthetic film.
+
+For each step, retain a reproducible example, the findings, and any remaining limitations. The completed historical studies remain retrospective evidence.
 
 ## Project Structure
 
