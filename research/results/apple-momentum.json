@@ -22,7 +22,7 @@
     "experiment.py": "a19592ef69a9a0686b8bff7f2df2b66e8454348fa32c1ce7c0c13f0ae00be083",
     "followup.py": "219be7c7105a4f5942e7842dfccd11375402a700a2c706d91428773d90644fe8",
     "main.py": "128df002206053d762e7770ff4661ab9dde82f07a8c10bfbdd09a6ac62568e01",
-    "study.py": "27a9e406b904a355630ac69785428625596dc6da804f17be744f87ecb39b96cb"
+    "study.py": "5c6f23f5c25100b88215b7738563b9e84351834abc18d02ce3014de3e3a99599"
   },
   "data_audit": {
     "observations": 506,
@@ -4470,7 +4470,7 @@
   ],
   "uncertainty": [
     {
-      "estimand": "annualised arithmetic mean strategy-minus-buy-and-hold daily return; not CAGR",
+      "estimand": "annualised arithmetic mean strategy-minus-buy-and-hold per-period return; not CAGR",
       "estimate": -0.05141867201806324,
       "percentile_95": [
         -0.4336358466547144,
@@ -4481,7 +4481,7 @@
       "seed": 2026
     },
     {
-      "estimand": "annualised arithmetic mean strategy-minus-buy-and-hold daily return; not CAGR",
+      "estimand": "annualised arithmetic mean strategy-minus-buy-and-hold per-period return; not CAGR",
       "estimate": -0.05141867201806324,
       "percentile_95": [
         -0.40064567590303984,
@@ -4492,7 +4492,7 @@
       "seed": 2026
     },
     {
-      "estimand": "annualised arithmetic mean strategy-minus-buy-and-hold daily return; not CAGR",
+      "estimand": "annualised arithmetic mean strategy-minus-buy-and-hold per-period return; not CAGR",
       "estimate": -0.05141867201806324,
       "percentile_95": [
         -0.28935981192714494,

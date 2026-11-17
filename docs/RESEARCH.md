@@ -144,5 +144,28 @@ The paired bootstrap reuses circular block totals instead of building a full
 return array for every resample. It retains the same seeded block draws, including
 a shortened final block. Tests compare its percentile intervals with direct
 resampling. Floating-point summation can differ in the last few digits. This
-changes computation cost, not the declared research protocol. Committed historical
-reports retain their original implementation hashes; reruns record current hashes.
+changes computation cost, not the declared research protocol.
+
+## Keeping the saved studies current
+
+The reports in `research/results/` represent the current implementation. Earlier
+reports and their original source hashes remain in Git history. After a source
+change, regenerate both reports using the pinned snapshots and review the diff:
+
+```bash
+uv run python scripts/fetch_study_data.py
+uv run python -m quant_research.followup --download
+uv run python -m quant_research.study
+uv run python -m quant_research.followup
+uv run python scripts/check_report_provenance.py
+```
+
+Downloads are only needed if the verified local snapshots are absent. The study
+runners are offline. Commit both JSON and Markdown outputs with the source change;
+do not edit hashes by hand. Check numerical changes separately from source hashes,
+interpreter metadata, and descriptions. A protocol change needs its own explanation.
+
+CI runs `check_report_provenance.py` without downloading market data. It rejects
+missing reports and changed, added, or removed implementation files. The check
+only compares the recorded hashes with current source: it does not independently
+validate the data, rerun the statistics, or certify that results are correct.
