@@ -19,14 +19,20 @@ def check_reports(root: Path) -> list[str]:
         path = root / "research/results" / name
         try:
             report = json.loads(path.read_text(encoding="utf-8"))
+            if not isinstance(report, dict):
+                raise ValueError("Expected a JSON object")
             recorded = report.get("implementation_sha256")
             if not isinstance(recorded, dict):
                 raise ValueError("Missing implementation_sha256 mapping")
-        except (OSError, ValueError, AttributeError) as error:
+        except (OSError, ValueError) as error:
             errors.append(f"{name}: {error}")
             continue
         for module in sorted(current.keys() | recorded.keys()):
-            if current.get(module) != recorded.get(module):
+            if (
+                module not in current
+                or module not in recorded
+                or current[module] != recorded[module]
+            ):
                 errors.append(f"{name}: stale or missing source hash for {module}")
     return errors
 

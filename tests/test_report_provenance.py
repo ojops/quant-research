@@ -54,3 +54,22 @@ def test_added_removed_sources_and_unreadable_reports_fail(saved_studies, change
     else:
         report.unlink()
     assert check_reports(saved_studies)
+
+
+def test_unexpected_null_hash_cannot_hide_a_removed_module(saved_studies):
+    path = saved_studies / "research/results/apple-momentum.json"
+    report = json.loads(path.read_text())
+    report["implementation_sha256"]["removed.py"] = None
+    path.write_text(json.dumps(report))
+    assert check_reports(saved_studies) == [
+        "apple-momentum.json: stale or missing source hash for removed.py"
+    ]
+
+
+@pytest.mark.parametrize("report", [None, [], {"implementation_sha256": []}])
+def test_invalid_report_structure_is_reported(saved_studies, report):
+    path = saved_studies / "research/results/apple-momentum.json"
+    path.write_text(json.dumps(report))
+    errors = check_reports(saved_studies)
+    assert len(errors) == 1
+    assert errors[0].startswith("apple-momentum.json:")
