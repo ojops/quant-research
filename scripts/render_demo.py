@@ -1,8 +1,10 @@
-"""Render the synthetic CLI backtest, signal timing, and declared sensitivities."""
+"""Render the synthetic backtest, declared experiment and two historical studies."""
 
 import argparse
+import math
 from pathlib import Path
 
+from demo_reports import record_walkthrough
 from demo_style import (
     AMBER,
     BLUE,
@@ -23,14 +25,15 @@ from demo_style import (
     text,
 )
 
-from quant_research.demo_data import build_demo
-
-DURATION = 38
+DURATION = 86
 CHAPTERS = [
-    (0, "Observe prices"),
-    (9, "Respect chronology"),
-    (18, "Account for costs"),
-    (28, "Inspect sensitivity"),
+    (0, "Price signal"),
+    (9, "Timing"),
+    (18, "Costs"),
+    (28, "Experiment"),
+    (43, "AAPL"),
+    (58, "Industries"),
+    (73, "Uncertainty"),
 ]
 
 
@@ -39,26 +42,188 @@ def dates(draw, left=200, right=1170):
     text(draw, (right, 702), "22 Mar 2024", 22, MUTED, anchor="rt")
 
 
+def experiment_frame(draw, data):
+    grid = data["experiment"]
+    params = grid["configuration"]["parameters"]
+    results = {
+        (row["lookback"], row["cost_bps"]): row["total_return"]
+        for row in grid["comparison"]
+        if row["model"] == "strategy"
+    }
+    panel(draw, (80, 250, 1130, 917))
+    panel(draw, (1170, 250, 1840, 917))
+    label(draw, 120, 290, "Net strategy return · synthetic development period", AMBER)
+    text(draw, (125, 387), "Lookback", 28, MUTED)
+    for j, cost in enumerate(params["cost_bps"]):
+        text(draw, (590 + j * 239, 387), f"{cost} bps", 29, MUTED, anchor="rt")
+    for i, lookback in enumerate(params["lookbacks"]):
+        y = 490 + i * 102
+        text(draw, (125, y), f"{lookback} closes", 32)
+        for j, cost in enumerate(params["cost_bps"]):
+            text(
+                draw,
+                (590 + j * 239, y),
+                f"{results[lookback, cost]:+.2%}",
+                34,
+                TEAL,
+                anchor="rt",
+                mono=True,
+            )
+        draw.line((125, y + 61, 1084, y + 61), fill=GRID)
+    text(draw, (125, 843), "10 basis points = 0.10% of the value traded.", 29, MUTED)
+    label(draw, 1210, 290, "A declared experiment")
+    metric(draw, 1210, 373, str(len(results)), "settings on the same dates", AMBER)
+    text(draw, (1210, 533), "Lag 1 executes at the next close.", 28)
+    text(draw, (1210, 601), "Each setting also runs buy-and-hold", 26)
+    text(draw, (1210, 644), "and cash on the same intervals.", 26)
+    text(draw, (1210, 765), "Checksums identify the CSV, JSON", 25, MUTED)
+    text(draw, (1210, 810), "declaration, and implementation.", 25, MUTED)
+
+
+def historical_frame(draw, study, *, monthly, progress):
+    panel(draw, (80, 250, 1175, 917))
+    panel(draw, (1215, 250, 1840, 917))
+    label(draw, 120, 289, "Growth of 1.00 after trading costs")
+    models = [
+        ("strategy", "Momentum", TEAL),
+        ("buy_and_hold", "Buy-and-hold", BLUE),
+        ("cash", "Cash", AMBER),
+    ]
+    legend(
+        draw, 190, 350, [(caption, colour) for _, caption, colour in models], gap=310
+    )
+    lines = [(caption, study["equity"][key], colour) for key, caption, colour in models]
+    values = [v for _, series, _ in lines for v in series]
+    tick = 0.5 if monthly else 0.05
+    limits = (
+        math.floor(min(values) / tick) * tick,
+        math.ceil(max(values) / tick) * tick,
+    )
+    chart(draw, (215, 430, 1120, 720), lines, limits, progress=progress)
+    text(draw, (215, 746), study["start"], 24, MUTED)
+    text(draw, (1120, 746), study["end"], 24, MUTED, anchor="rt")
+    text(
+        draw,
+        (120, 842),
+        "Cash earns the archive’s monthly cash rate."
+        if monthly
+        else "The daily pilot assumes zero return on cash.",
+        27,
+        MUTED,
+    )
+    label(draw, 1255, 289, "Fixed evaluation rule", AMBER)
+    unit = "months" if monthly else "closes"
+    text(
+        draw,
+        (1255, 370),
+        f"Lookback {study['lookback']} {unit} · {study['cost_bps']} bps",
+        28,
+    )
+    text(draw, (1255, 430), "Orders execute one observation later.", 25, MUTED)
+    for x, caption in [(1600, "Momentum"), (1798, "Buy & hold")]:
+        text(draw, (x, 539), caption, 24, MUTED, anchor="rt")
+    first = (
+        ("Annualised", "annualised_return")
+        if monthly
+        else ("Total return", "total_return")
+    )
+    for i, (caption, key) in enumerate([first, ("Drawdown", "max_drawdown")]):
+        y = 612 + i * 85
+        text(draw, (1255, y), caption, 27)
+        for x, model, colour in [
+            (1600, "strategy", TEAL),
+            (1798, "buy_and_hold", BLUE),
+        ]:
+            text(
+                draw,
+                (x, y),
+                f"{study['metrics'][model][key]:.2%}",
+                29,
+                colour,
+                mono=True,
+                anchor="rt",
+            )
+    text(draw, (1255, 823), "Drawdown is the largest fall", 24, MUTED)
+    text(draw, (1255, 858), "from an earlier peak.", 24, MUTED)
+
+
+def uncertainty_frame(draw, data):
+    rows = data["studies"]["industry"]["uncertainty"]
+    panel(draw, (80, 250, 1155, 917))
+    panel(draw, (1195, 250, 1840, 917))
+    label(draw, 120, 289, "Industry study · 95% intervals for the mean difference")
+    text(draw, (120, 370), "Momentum minus buy-and-hold, annualised", 29)
+    limits = max(abs(bound) for row in rows for bound in row["percentile_95"]) * 1.08
+
+    def x(value):
+        return 670 + value / limits * 410
+
+    draw.line((x(0), 460, x(0), 777), fill=AMBER, width=3)
+    text(draw, (x(0), 419), "0%", 24, AMBER, anchor="mt")
+    for i, row in enumerate(rows):
+        y = 510 + i * 108
+        lo, hi = row["percentile_95"]
+        dot = x(row["estimate"])
+        text(draw, (120, y - 15), f"{row['block_size']} months", 25, MUTED)
+        draw.line((x(lo), y, x(hi), y), fill=TEAL, width=6)
+        for end, value in [(x(lo), lo), (x(hi), hi)]:
+            draw.line((end, y - 10, end, y + 10), fill=TEAL, width=3)
+            text(draw, (end, y + 23), f"{value:+.2%}", 23, MUTED, anchor="mt")
+        draw.ellipse((dot - 8, y - 8, dot + 8, y + 8), fill=INK)
+    text(
+        draw,
+        (120, 845),
+        "Each row uses a different block length when resampling months.",
+        25,
+        MUTED,
+    )
+    label(draw, 1235, 289, "What the sample can tell us", AMBER)
+    crossing = sum(r["percentile_95"][0] <= 0 <= r["percentile_95"][1] for r in rows)
+    metric(
+        draw, 1235, 365, f"{crossing} / {len(rows)}", "intervals include zero", AMBER
+    )
+    text(draw, (1235, 532), "The mean difference is uncertain.", 27)
+    text(draw, (1235, 598), "Both histories were studied", 26, MUTED)
+    text(draw, (1235, 642), "retrospectively.", 26, MUTED)
+    text(draw, (1235, 751), "Read the full metrics and limitations", 26)
+    text(draw, (1235, 797), "in research/results/.", 26)
+
+
 def frame(t, data):
     run = data["runs"]["lb5_cost10"]
     stats = run["strategy"]["metrics"]
-    section = 0 if t < 9 else 1 if t < 18 else 2 if t < 28 else 3
+    section = max(i for i, (start, _) in enumerate(CHAPTERS) if t >= start)
     titles = [
         "From a price history to a position.",
         "A signal can only act on the next interval.",
         "Compound returns. Charge the trades.",
-        "Change assumptions. Show every result.",
+        "Declare the settings before you run them.",
+        "How did momentum fare on AAPL in 2016?",
+        "Repeat the test across 12 industry portfolios.",
+        "How uncertain is the return difference?",
     ]
     image, draw = base(
         "quant-research",
         3,
         titles[section],
-        "SYNTHETIC DATA  /  single asset  /  reproducible, descriptive research",
+        [
+            "Synthetic prices  /  the rule holds the asset when its price rises over five observations.",
+            "Synthetic prices  /  the default example trades at the close that generated the signal (lag 0).",
+            "Synthetic prices  /  compare a fixed rule, buy-and-hold, and cash over the same dates.",
+            "uv run quant-research --experiment examples/synthetic_experiment.json",
+            "Historical daily pilot  /  2015 supplies warm-up prices for the fixed 2016 evaluation.",
+            "Historical monthly study  /  1980–1999 development  /  2000–2016 evaluation",
+            "Paired block resampling keeps nearby strategy and benchmark returns together.",
+        ][section],
         CHAPTERS,
         t,
         DURATION,
         AMBER,
-        "Synthetic demonstration, not investment performance. Idealised close fills; zero cash/risk-free return; no final liquidation.",
+        (
+            "Bundled synthetic prices illustrate portfolio accounting. All three models start in cash and keep their final positions."
+            if section < 4
+            else "Historical results use archived data and idealised execution. The studies use different assets and time intervals."
+        ),
     )
     if section == 0:
         panel(draw, (80, 250, 1250, 917))
@@ -113,7 +278,7 @@ def frame(t, data):
         )
         text(draw, (1330, 730), "5-observation lookback", 26)
         text(draw, (1330, 775), "10 bps proportional costs", 26)
-        text(draw, (1330, 845), "Parameters are fixed, not fitted.", 23, MUTED)
+        text(draw, (1330, 845), "The settings are fixed in advance.", 23, MUTED)
     elif section == 1:
         event = data["dates"].index("2024-02-07")
         old, latest, following = (
@@ -167,7 +332,7 @@ def frame(t, data):
         text(
             draw,
             (1070, 866),
-            f"Cash earns zero; exiting still costs {cost:.3%}.",
+            f"Cash earns zero. The exit costs {cost:.3%}.",
             25,
             MUTED,
         )
@@ -229,63 +394,20 @@ def frame(t, data):
             y = 510 + i * 63
             text(draw, (1330, y), caption, 23, MUTED)
             text(draw, (1800, y), value, 27, INK, mono=True, anchor="rt")
-        text(draw, (1330, 855), "252 periods/year; 36 intervals.", 23, MUTED)
+        text(draw, (1330, 855), "252 periods/year · 36 intervals.", 23, MUTED)
+    elif section == 3:
+        experiment_frame(draw, data)
+    elif section in (4, 5):
+        monthly = section == 5
+        study = data["studies"]["industry" if monthly else "apple"]
+        historical_frame(
+            draw,
+            study,
+            monthly=monthly,
+            progress=0.12 + 0.88 * ease((t - CHAPTERS[section][0]) / 5),
+        )
     else:
-        panel(draw, (80, 250, 1180, 917))
-        label(draw, 120, 290, "Same 5-observation signal · different costs")
-        legend(
-            draw,
-            210,
-            345,
-            [("0 bps", TEAL), ("10 bps", BLUE), ("50 bps", AMBER)],
-            gap=260,
-        )
-        series = [
-            (str(cost), data["runs"][f"lb5_cost{cost}"]["strategy"]["equity"], colour)
-            for cost, colour in [(0, TEAL), (10, BLUE), (50, AMBER)]
-        ]
-        chart(
-            draw,
-            (210, 415, 1120, 690),
-            series,
-            (0.97, 1.06),
-            progress=0.15 + 0.85 * ease((t - 28) / 3),
-        )
-        dates(draw, 210, 1120)
-        for i, (cost, colour) in enumerate([(0, TEAL), (10, BLUE), (50, AMBER)]):
-            x = 120 + 345 * i
-            result = data["runs"][f"lb5_cost{cost}"]["strategy"]["metrics"]
-            metric(
-                draw,
-                x,
-                780,
-                f"{result['total_return']:+.2%}",
-                f"total return / {cost} bps",
-                colour,
-                size=36,
-            )
-        panel(draw, (1220, 250, 1840, 917))
-        label(draw, 1260, 290, "Lookback sensitivity · 10 bps")
-        text(draw, (1260, 355), "Lookback", 24, MUTED)
-        text(draw, (1800, 355), "Total return", 24, MUTED, anchor="rt")
-        for i, lookback in enumerate([3, 5, 10]):
-            result = data["runs"][f"lb{lookback}_cost10"]["strategy"]["metrics"]
-            y = 430 + i * 85
-            text(draw, (1260, y), f"{lookback} observations", 28)
-            text(
-                draw,
-                (1800, y),
-                f"{result['total_return']:+.2%}",
-                31,
-                AMBER,
-                mono=True,
-                anchor="rt",
-            )
-            draw.line((1260, y + 50, 1800, y + 50), fill=GRID)
-        text(draw, (1260, 715), "All declared variants shown.", 27, AMBER)
-        text(draw, (1260, 763), "No fitting. No profitability inference.", 24, MUTED)
-        text(draw, (1260, 825), "CSV hash + settings + full paths", 24)
-        text(draw, (1260, 866), "saved in demo-data.json", 24, TEAL, mono=True)
+        uncertainty_frame(draw, data)
     return image
 
 
@@ -295,16 +417,17 @@ def main():
     parser.add_argument("--stills-only", action="store_true")
     args = parser.parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    data = build_demo(
-        Path(__file__).resolve().parents[1] / "examples/synthetic_prices.csv"
-    )
+    data = record_walkthrough(Path(__file__).resolve().parents[1])
     save_data(args.output_dir / "demo-data.json", data)
     if args.stills_only:
-        for t in (5, 13, 24, 34):
+        for start, _ in CHAPTERS:
+            t = start + 5
             frame(t, data).save(args.output_dir / f"frame-{t}.png")
         return
-    encode(lambda t: frame(t, data), args.output_dir / "demo.mp4", DURATION)
-    preview(args.output_dir / "demo.mp4", args.output_dir / "preview.gif", 0, 8)
+    encode(lambda t: frame(t, data), args.output_dir / "demo.mp4", DURATION, CHAPTERS)
+    preview(
+        args.output_dir / "demo.mp4", args.output_dir / "preview.gif", CHAPTERS[5][0], 8
+    )
 
 
 if __name__ == "__main__":
