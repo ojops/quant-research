@@ -2,15 +2,15 @@
 
 A Python project for reproducible single-asset return analysis and cost-aware backtesting. This is a research baseline, **not** a validated profitable strategy or live trading system.
 
-[![Eight-second preview of the synthetic backtest](docs/media/preview.gif)](https://raw.githubusercontent.com/ojops/quant-research/04655a037b8421d7d7e9f633b05b149262a29da3/docs/media/demo.mp4)
+[![Animated net wealth of momentum, buy-and-hold, and cash across 12 industry portfolios](docs/media/preview.gif)](https://raw.githubusercontent.com/ojops/quant-research/8016f471d727d1e88c5a7b9295865a6c617c7db9/docs/media/demo.mp4)
 
-*Preview: a backtest on synthetic prices. [Watch the full 38-second demonstration (MP4)](https://raw.githubusercontent.com/ojops/quant-research/04655a037b8421d7d7e9f633b05b149262a29da3/docs/media/demo.mp4) · [How the video is made](docs/DEMO.md).*
+*Watch the [1:26 research walkthrough (MP4)](https://raw.githubusercontent.com/ojops/quant-research/8016f471d727d1e88c5a7b9295865a6c617c7db9/docs/media/demo.mp4). Follow one synthetic trade, see what execution delay changes, and read the results and uncertainty from the AAPL and industry studies. [Chapters and reproduction](docs/DEMO.md).*
 
 ## Overview
 
-Validate a price series, backtest a fixed momentum rule with trading costs, and compare it with buy-and-hold and cash. Experiment files record the hypothesis, data provenance, evaluation period, and parameter comparisons alongside input and source checksums.
+A backtest replays historical observations to see how a rule would have behaved. Here the rule holds one asset when its price is above an earlier close and otherwise holds cash. The backtest charges trading costs and compares the result with buying and holding the asset and with staying in cash. Experiment files record the hypothesis, data provenance, evaluation period, and parameter comparisons alongside input and source checksums.
 
-The bundled synthetic example tests the implementation. A separate [completed historical AAPL pilot](research/results/apple-momentum.md) investigates archived market prices with a fixed protocol, chronological evaluation, cost and lookback comparisons, and uncertainty estimated by paired block resampling. This is a limited retrospective study, **not** an untouched test or evidence of general profitability.
+The bundled synthetic example lets you follow one trade on a small price series. A separate [completed historical AAPL pilot](research/results/apple-momentum.md) investigates archived market prices with a fixed protocol, chronological evaluation, cost and lookback comparisons, and uncertainty estimated by paired block resampling. This is a limited retrospective study, **not** an untouched test or evidence of general profitability.
 
 ## Longer-history follow-up
 
@@ -61,6 +61,7 @@ Read [the fixed protocol](docs/STUDY_PLAN.md), [findings and limitations](resear
 - `backtest.py` and `evaluation.py`: portfolio accounting and causal signal/execution timing.
 - `experiment.py`: declared synthetic/custom experiments and provenance checks.
 - `study.py`: fixed historical design, data audit, paired block bootstrap and report generation.
+- `followup.py`: monthly industry portfolios, historical cash returns, and aggregate results.
 - `tests/test_study.py`: paired-return checks, checksum rejection and future-data invariance; existing tests cover the underlying accounting.
 
 The historical runner builds on the existing backtester. It performs no fitting, automatic parameter selection or machine learning.
@@ -77,7 +78,7 @@ The historical runner builds on the existing backtester. It performs no fitting,
 - Choose idealised signal-close or delayed next-close execution
 - Export results, dated return paths, parameters, and comparisons as JSON
 
-The implementation covers **one asset** with idealised close-based execution. The core CLI does not download data, fit parameters, or trade live; the separate study fetch script downloads one fixed snapshot.
+Each backtest models **one asset** with idealised close-based execution. The core CLI reads local files. Each historical study has a separate download step that verifies its fixed archive.
 
 ## Requirements and Installation
 
@@ -98,6 +99,8 @@ uv run quant-research examples/synthetic_prices.csv --test-start 2024-02-01
 uv run quant-research examples/synthetic_prices.csv --test-start 2024-02-01 --lookback 5 --cost-bps 10
 ```
 
+In the first command, look for `strategy.metrics.total_return` in the JSON. A value near `0.0520` means **5.20%** over the evaluation period. Buy-and-hold returned **0.94%** over those same dates. These are synthetic results you can use to check your first run.
+
 CSV input requires strictly increasing, unique `date` values (`YYYY-MM-DD`) and positive finite `adjusted_close` values. Prices are not adjusted or filled by the CLI.
 
 Reproduce the bundled **development** experiment (nine fixed settings, each compared with buy-and-hold and cash):
@@ -106,7 +109,7 @@ Reproduce the bundled **development** experiment (nine fixed settings, each comp
 uv run quant-research --experiment examples/synthetic_experiment.json
 ```
 
-Paths are relative to the experiment JSON file. Input checksum mismatches and CLI parameter overrides are rejected. The example uses a one-observation execution delay. See the [experiment schema](docs/RESEARCH.md#declared-experiment-files) to create your own declaration.
+Paths are relative to the experiment JSON file. Input checksum mismatches and CLI parameter overrides are rejected. The example delays trades by one close. At a lookback of 5 and cost of 10 bps, the strategy now returns **1.28%** on the same dates. The `comparison` array includes all three models for every setting. See the [experiment schema](docs/RESEARCH.md#declared-experiment-files) to create your own declaration.
 
 For a single run with a fixed endpoint and delayed execution:
 
@@ -134,10 +137,10 @@ The AAPL pilot and longer industry study are complete. The next priorities are c
 
 - **Independently check the data:** reconcile the industry archive with another source, recording data rights, retrieval dates, units, adjustments, and unresolved differences. Audit the daily pilot against an exchange calendar without changing the frozen study snapshots.
 - **Explain exposure and drawdown:** measure time invested, turnover, and contributions from the asset and cash. Define an exposure-matched benchmark using development data, then compare returns, drawdown, and uncertainty over the same evaluation period.
-- **Make results easier to inspect:** generate a short metrics table and equity/drawdown charts from the existing JSON results. Include dates, frequency, costs, execution lag, and cash assumptions, and check displayed values against the saved results.
+- **Make results easier to inspect:** extend the film’s historical equity charts into standalone equity and drawdown plots with a short metrics table from the existing JSON results. Include dates, frequency, costs, execution lag, and cash assumptions, and check displayed values against the saved results.
 - **Conduct a prospective evaluation:** record one hypothesis, universe, fixed rule, data source, execution assumptions, and evaluation schedule before collecting new observations. Keep operational checks separate from rule changes and report the outcome at the declared endpoint, including negative findings.
 - **Extend uncertainty assessment:** investigate structural breaks and multiple-comparison controls alongside the existing paired block intervals.
-- **Validate execution and visuals:** test next-close assumptions against executable prices and order timing. Generalise chart dates and labels beyond the fixed synthetic film.
+- **Validate execution and visuals:** test next-close assumptions against executable prices and order timing. Extend the film’s charts to user-supplied experiments.
 
 For each step, retain a reproducible example, the findings, and any remaining limitations. The completed historical studies remain retrospective evidence.
 
