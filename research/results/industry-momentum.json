@@ -89,7 +89,7 @@
     "__main__.py": "df36353c6d70e3108883b8ed2414e7da80a08b17be33a616cfd1a01af3277c2d",
     "analysis.py": "21e71f5b133efadd7908136489e377ae5f1d025ae39c28bafd16556a493c1fbd",
     "backtest.py": "61dcfc533dafde46fae37fb6d1ed3768eb2d19f1ad257826d230aa60869bacb3",
-    "data.py": "e9c0b1679a93cf95357843bc2f85ceccff787d5e28a3468589fcb32217fc7938",
+    "data.py": "3897e229e17d7f0433641e708f845288f84571b9f46cf866ba320e830f3000d9",
     "demo_data.py": "463e0ace4d87ac1c23b8a454fbc6810251dd7dafbe6c216f521291fa385ece5d",
     "evaluation.py": "ac91272cce2cc3ba9a2d4b4570370f655ed65a79a8dc4f649f7fd0ad9b5f6dbc",
     "experiment.py": "a19592ef69a9a0686b8bff7f2df2b66e8454348fa32c1ce7c0c13f0ae00be083",
