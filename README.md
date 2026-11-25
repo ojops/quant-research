@@ -101,7 +101,7 @@ uv run quant-research examples/synthetic_prices.csv --test-start 2024-02-01 --lo
 
 In the first command, look for `strategy.metrics.total_return` in the JSON. A value near `0.0520` means **5.20%** over the evaluation period. Buy-and-hold returned **0.94%** over those same dates. These are synthetic results you can use to check your first run.
 
-CSV input requires strictly increasing, unique `date` values (`YYYY-MM-DD`) and positive finite `adjusted_close` values. Prices are not adjusted or filled by the CLI.
+CSV input requires strictly increasing, unique `date` values (`YYYY-MM-DD`) and positive finite `adjusted_close` values. UTF-8 CSV exports with a leading byte order mark are accepted. The input checksum covers the original file bytes, including the mark. Prices are not adjusted or filled by the CLI.
 
 Reproduce the bundled **development** experiment (nine fixed settings, each compared with buy-and-hold and cash):
 

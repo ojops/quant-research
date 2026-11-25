@@ -1,6 +1,8 @@
 """Independent accounting, chronology and experiment reproduction checks."""
 
+import hashlib
 import json
+from codecs import BOM_UTF8
 from datetime import date, timedelta
 from fractions import Fraction
 from pathlib import Path
@@ -181,3 +183,23 @@ def test_out_of_range_integer_cost_is_a_cli_error(tmp_path, capsys):
     output = capsys.readouterr()
     assert not output.out
     assert "cost_bps must be finite and in [0, 10000)" in output.err
+
+
+def test_csv_byte_order_mark_preserves_results_and_raw_file_checksum(tmp_path, capsys):
+    config_path, config = copy_experiment(tmp_path)
+    csv_path = tmp_path / "synthetic_prices.csv"
+    args = [str(csv_path), "--test-start", "2024-02-01"]
+    assert main(args) == 0
+    original = json.loads(capsys.readouterr().out)
+
+    marked = BOM_UTF8 + csv_path.read_bytes()
+    csv_path.write_bytes(marked)
+    checksum = hashlib.sha256(marked).hexdigest()
+    assert main(args) == 0
+    assert json.loads(capsys.readouterr().out) == {**original, "input_sha256": checksum}
+
+    with pytest.raises(ValueError, match="SHA-256 mismatch"):
+        run_experiment(config_path)
+    config["data"]["sha256"] = checksum
+    config_path.write_text(json.dumps(config))
+    assert run_experiment(config_path)["input_sha256"] == checksum

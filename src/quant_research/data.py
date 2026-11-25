@@ -52,7 +52,7 @@ def parse_prices(text: str) -> PriceSeries:
     """Parse a captured CSV snapshot, so its checksum identifies parsed bytes."""
     dates, prices = [], []
 
-    with io.StringIO(text, newline="") as handle:
+    with io.StringIO(text.removeprefix("\ufeff"), newline="") as handle:
         reader = csv.DictReader(handle)
         fields = reader.fieldnames or []
 
